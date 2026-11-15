@@ -241,6 +241,8 @@ Source files are fetched by script with pinned SHA-256 checksums and never commi
 
 "Good enough" for a layer is a measured error rate on a hand-labelled sample, recorded in `report.json`. It is not perfection; the long tail of malformed entries is fixed through `corrections.json` over time.
 
+**Licensing (decided).** Code, documentation, and design are MIT (`LICENSE`). The published edition is released under CC0 1.0 (`LICENSE-DATA`). CC0 can only waive rights we hold, so it applies to our own tagging; that is one more reason hint-derived fields stay out of the published file.
+
 **What gets published.**
 
 - Releases built from the plain text alone (0.1 to 0.5, and any release built with `--no-hints`) can be published openly. They contain public-domain text plus our own tagging.
@@ -352,7 +354,7 @@ Data and site advance together, one layer at a time. The edition is never "finis
 
 1. Register `w1913.com` (and `.dev` / `.app` if wanted); all three were unregistered on 15 Nov 2026.
 2. Email Project Gutenberg about v0.50 before starting Phase 5.
-3. Code and documentation are MIT-licensed (decided). Under what terms is the edition itself released? (The text is public domain; a CC0 dedication of our own tagging would keep it that simple.) Where is it published? (Default: release assets on `cschweda/w1913`; npm is the alternative.)
+3. Where is the edition published? (Default: release assets on `cschweda/w1913`; npm is the alternative.)
 4. Body typeface, and whether to self-host fonts.
 5. Is meaning-based search worth a model dependency?
 

@@ -75,8 +75,16 @@ W1913 is an independent project. It is not affiliated with or endorsed by Projec
 
 ## Licence
 
-The code, documentation, and design in this repository are released under the [MIT License](LICENSE).
+Different parts of this project are covered by different terms.
 
-The dictionary itself is not covered by that licence and does not need to be: the text of *Webster's Revised Unabridged Dictionary* (1913) is in the public domain in the United States, and nothing here changes that.
+| What | Terms | File |
+|---|---|---|
+| Code, documentation, and design | MIT License | [LICENSE](LICENSE) |
+| The published structured edition (this project's tagging of the dictionary) | CC0 1.0 Universal | [LICENSE-DATA](LICENSE-DATA) |
+| The dictionary text itself | Public domain in the United States | n/a |
 
-Terms for the structured edition this project will produce (the tagging added on top of the public-domain text) will be stated with its first release.
+Notes:
+
+- No edition has been released yet. When one is, it will be released under CC0, so the tagged data is as free to reuse as the text it is built on.
+- CC0 applies to the published edition only. That edition excludes any field derived from the MICRA-tagged files, whose status is unresolved (see Sources).
+- Neither licence changes the status of the dictionary text. It was already in the public domain.
