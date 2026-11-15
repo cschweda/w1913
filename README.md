@@ -75,4 +75,8 @@ W1913 is an independent project. It is not affiliated with or endorsed by Projec
 
 ## Licence
 
-Not yet chosen. The dictionary text is in the public domain in the United States; terms for this project's code and for its structured edition will be added before the first release.
+The code, documentation, and design in this repository are released under the [MIT License](LICENSE).
+
+The dictionary itself is not covered by that licence and does not need to be: the text of *Webster's Revised Unabridged Dictionary* (1913) is in the public domain in the United States, and nothing here changes that.
+
+Terms for the structured edition this project will produce (the tagging added on top of the public-domain text) will be stated with its first release.

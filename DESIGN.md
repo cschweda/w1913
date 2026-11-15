@@ -352,7 +352,7 @@ Data and site advance together, one layer at a time. The edition is never "finis
 
 1. Register `w1913.com` (and `.dev` / `.app` if wanted); all three were unregistered on 15 Nov 2026.
 2. Email Project Gutenberg about v0.50 before starting Phase 5.
-3. Open-source the parser and site? And under what terms is the edition itself released? (The text is public domain; a CC0 dedication of our own tagging would keep it that simple.) Where is it published? (Default: release assets on `cschweda/w1913`; npm is the alternative.)
+3. Code and documentation are MIT-licensed (decided). Under what terms is the edition itself released? (The text is public domain; a CC0 dedication of our own tagging would keep it that simple.) Where is it published? (Default: release assets on `cschweda/w1913`; npm is the alternative.)
 4. Body typeface, and whether to self-host fonts.
 5. Is meaning-based search worth a model dependency?
 
