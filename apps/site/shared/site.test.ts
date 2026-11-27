@@ -204,3 +204,11 @@ describe("unusual words", () => {
     expect(html).toBe('<p>See <a href="/consternation#n" class="x">Consternation</a>; <a href="/consternation" class="rare" data-preview="consternation">consternation</a>.</p>');
   });
 });
+
+describe("home page examples", () => {
+  const edition = path.join(import.meta.dirname, "../../..", config.paths.editions, `w1913-${config.edition.version}`, `w1913-${config.edition.version}.jsonl`);
+  it.skipIf(!existsSync(edition))("every example word is a headword in the pinned edition", () => {
+    const slugs = new Set(readFileSync(edition, "utf8").split("\n").filter(Boolean).map((l) => (JSON.parse(l) as { id: string }).id.replace(/-\d+$/, "")));
+    expect(config.site.examples.filter((w) => !slugs.has(slugify(w)))).toEqual([]);
+  });
+});

@@ -71,8 +71,12 @@ export const config = {
     source: { name: "Project Gutenberg eBook #29765", url: "https://www.gutenberg.org/ebooks/29765" },
     /** The maker's workshop of apps, linked from the footer. */
     workshop: { name: "Metaincognita Workshop", url: "https://metaincognita.com" },
-    /** Words offered as examples on the home page. Any headwords will do. */
-    examples: ["sublime", "saunter", "petrichor", "susurrus", "gossamer", "lambent"],
+    /**
+     * Words offered as examples on the home page. They must be headwords in
+     * the 1913 dictionary (a test checks each against the pinned edition);
+     * modern coinages such as "petrichor" (1964) are not.
+     */
+    examples: ["sublime", "saunter", "amanuensis", "susurrus", "gossamer", "lambent"],
   },
 
   // ---------------------------------------------------------------------------
