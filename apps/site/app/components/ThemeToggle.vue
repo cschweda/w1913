@@ -9,9 +9,13 @@ function toggle() {
 
 <template>
   <ClientOnly>
-    <button type="button" class="btn" @click="toggle">{{ isDark ? "Light mode" : "Dark mode" }}</button>
+    <button type="button" class="btn tbtn" @click="toggle">{{ isDark ? "Light mode" : "Dark mode" }}</button>
     <template #fallback>
       <button type="button" class="btn" disabled>Light mode</button>
     </template>
   </ClientOnly>
 </template>
+
+<style scoped>
+.tbtn { font-size: 16px; }
+</style>

@@ -10,14 +10,13 @@ const host = config.site.url.replace(/^https?:\/\//, "");
 
 <template>
   <div class="home">
-    <h1 class="vh">W1913: Webster's Revised Unabridged Dictionary (1913)</h1>
     <SearchBox size="hero" autofocus />
     <div aria-hidden="true" class="bar" />
 
     <ol class="ways" aria-label="Ways to look up a word">
       <li>
         <span class="num">1</span>
-        <span class="what">Type a word above</span>
+        <span class="what">Type a word in the box</span>
         <span class="how">Suggestions appear as you type; Enter opens the closest.</span>
       </li>
       <li>

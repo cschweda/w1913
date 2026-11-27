@@ -17,6 +17,17 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-27
+
+### Changed
+
+- The home page says what it is for: a heading, "Look up any word in the 1913 Webster's" (also
+  the field's label), a red **Look up** button beside the field, and a one-line instruction under
+  it. Entry pages get the Look up button too.
+- A larger header: the logo badge 48 px (was 36), the wordmark 32 px (was 24), larger navigation
+  links and theme button, more room around them.
+- README screenshots updated (the home page; an entry with unusual words).
+
 ## [0.6.0] - 2026-11-27
 
 ### Added
@@ -197,7 +208,8 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/cschweda/w1913/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/cschweda/w1913/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/cschweda/w1913/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/cschweda/w1913/compare/v0.3.2...v0.4.0

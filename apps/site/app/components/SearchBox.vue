@@ -83,7 +83,8 @@ const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl 
 
 <template>
   <form role="search" :class="['box', size === 'hero' ? 'is-hero' : 'is-bar']" @submit.prevent="freeText(term)">
-    <label for="lookup" class="cap lbl">Look up a word</label>
+    <h1 v-if="size === 'hero'" class="ask"><label for="lookup">Look up any word in the 1913 Webster's</label></h1>
+    <label v-else for="lookup" class="cap lbl">Look up a word</label>
     <div class="row">
     <UInputMenu
       id="lookup"
@@ -107,9 +108,11 @@ const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl 
         <span class="cap">Type a word</span>
       </template>
     </UInputMenu>
+    <button type="submit" class="btn go">Look up</button>
     <button v-if="term" type="button" class="btn clear" @click="clear">Clear<span class="vh"> the search</span></button>
     </div>
-    <p v-if="size === 'bar'" class="hint" aria-hidden="true">Press <kbd>/</kbd> or <kbd>Ctrl K</kbd> to look up from anywhere</p>
+    <p v-if="size === 'hero'" class="hint big">Type a word and press <kbd>Enter</kbd>, or pick one of the suggestions as you type.</p>
+    <p v-else class="hint" aria-hidden="true">Press <kbd>/</kbd> or <kbd>Ctrl K</kbd> to look up from anywhere</p>
   </form>
 </template>
 
@@ -119,7 +122,12 @@ const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl 
 .row { display: flex; align-items: center; gap: 16px; }
 .field { display: flex; width: 100%; flex: 1; min-width: 0; }
 .clear { flex: none; }
-.is-hero .clear { min-height: 56px; padding: 0 22px; font-size: 18px; }
+.go { flex: none; background: var(--ac); color: var(--on); border-color: var(--ac); font-weight: 700; }
+.go:hover { background: transparent; color: var(--ac); }
+.is-hero .clear, .is-hero .go { min-height: 60px; padding: 0 26px; font-size: 20px; }
+.ask { margin: 0 0 8px; font-size: clamp(24px, 3.4vw, 40px); font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+.hint.big { margin-top: 14px; font-size: 17px; }
+@media (max-width: 560px) { .row { flex-wrap: wrap; } .field { flex-basis: 100%; } }
 .box :deep(input) { width: 100%; }
 .is-bar { max-width: 860px; }
 .is-hero :deep(input) { height: auto; padding-top: 4px; padding-bottom: 8px; font-size: clamp(40px, 8vw, 104px); font-weight: 700; letter-spacing: -.045em; line-height: 1.05; }
