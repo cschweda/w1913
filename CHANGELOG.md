@@ -17,6 +17,29 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-27
+
+Phase 7, "Can my own tools use it?": offline lookup and static data, with no API (DESIGN.md §4b).
+
+### Added
+
+- **`@w1913/lookup`** (`packages/lookup`): `createLookup(build).lookup(word)` and `suggest()`,
+  plus `createShardedLookup()` for shards. No dependencies; compiles to plain ESM for npm
+  (`pnpm --filter @w1913/lookup build`). The folding and the suffix stripper moved here, and the
+  site imports them, so the two cannot drift apart.
+- **The lookup build**, `w1913-lookup-<edition>.json`, written by `db:import` next to the
+  database from the same rows: every page, its entries' parts of speech and senses (block
+  quotations left out), and the form maps that reproduce the site's lookup rules.
+  **22.7 MB, 7.5 MB gzipped** for edition 0.6. JSON rather than SQLite (DESIGN.md §8 question 6).
+- **Static shards** at `/data/<edition>/<prefix>.json` (362) and `/data/<edition>/index.json`,
+  cached for a year, open to any origin. CC0. `db:import` writes them as files beside the
+  database (24 MB) and the server reads one per request, so its memory stays flat.
+- **Phase 7 exit test:** `lookup()` agrees with the site on 200 fixed words (headwords,
+  variants, diacritics, inflections, archaic and learned forms, reserved words, misses), from the
+  whole build and from shards.
+- **`scripts/release-assets.sh`** prepares a release's downloads (the edition tarball, the lookup
+  build, SHA-256 sums) and prints the `gh release create` command; it publishes nothing itself.
+
 ## [0.11.0] - 2026-11-27
 
 Phase 6, "Keeping", and three smaller items.
@@ -374,7 +397,8 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/cschweda/w1913/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/cschweda/w1913/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/cschweda/w1913/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/cschweda/w1913/compare/v0.8.0...v0.9.0

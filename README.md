@@ -1,7 +1,7 @@
 ![w1913.com: W for Webster's, 1913 for the Revised Unabridged edition. A dictionary for writers.](assets/og-image.png)
 
 [![Live: w1913.com](https://img.shields.io/badge/live-w1913.com-c8102e.svg)](https://w1913.com)
-[![Version 0.11.0](https://img.shields.io/badge/version-0.11.0-111111.svg)](CHANGELOG.md)
+[![Version 0.12.0](https://img.shields.io/badge/version-0.12.0-111111.svg)](CHANGELOG.md)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-111111.svg)](LICENSE)
 [![Data: CC0 1.0](https://img.shields.io/badge/data-CC0%201.0-111111.svg)](LICENSE-DATA)
 [![Node 24](https://img.shields.io/badge/node-24-111111.svg)](.nvmrc)
@@ -42,6 +42,7 @@ The 1913 Webster's is loved for its discursive definitions, its literary quotati
 - **Look up by selection**: select a word in an entry to jump to it.
 - **Dark and light themes**, fast on a phone (Lighthouse 100 for performance, accessibility, best practices, and SEO), and no WCAG 2.2 AA violations on any page type.
 - **Private**: no accounts, no tracking cookies, and the words you look up are not logged.
+- **Offline lookup for other programs**: [`@w1913/lookup`](packages/lookup) looks words up with the same answers as the site, from a 7.5 MB lookup build (no API, nothing sent anywhere), or from static shards at `w1913.com/data/0.6/<prefix>.json`.
 - **Readable by machines**: a canonical address, descriptions, and schema.org structured data on every page (each entry is a `DefinedTerm`), plus [/llms.txt](https://w1913.com/llms.txt).
 
 ![An entry: "Subtle", with its syllable diagram, decoded abbreviations in the etymology, four numbered senses, the Syn. line, and the neighbors list on the left.](docs/images/entry-subtle.jpg)
@@ -57,13 +58,14 @@ Each phase adds one layer to the edition and the features that rest on it (DESIG
 
 | A writer asks | W1913 will answer with | Phase |
 |---|---|---|
-| Can my own tools use it? | The edition as downloads and static files for Drafter and the Markdown editor, offline (no API) | 7 |
+| Can my own tools use it? | Wiring the lookup build into Drafter (desktop and web) and the Markdown editor | (their repositories) |
 
 ## How it is built
 
-Two packages in one pnpm workspace:
+Three packages in one pnpm workspace:
 
 - **`packages/data`** (plain TypeScript, run by Node 24) turns Project Gutenberg eBook #29765 into a versioned, layered edition of the dictionary: `w1913-<version>.jsonl`, one entry per line, validated against a schema. The site currently serves **edition 0.6**: 113,409 entries with their senses, synonyms, labels, syllables and stress, listed inflections, and quotations with their authors.
+- **`packages/lookup`** (`@w1913/lookup`) is the offline lookup: the folding and suffix stripping the site itself uses, over a compact lookup build that `db:import` writes next to the database. `scripts/release-assets.sh` prepares the downloads for a release.
 - **`apps/site`** (Nuxt 4, Nuxt UI v4) imports the pinned edition into a read-only SQLite database, renders every entry to semantic HTML once at import, and serves it with server-side rendering.
 
 Every published word comes from #29765, which Project Gutenberg catalogues as public domain. The older tagged edition (#660–670) is used only to measure the parser's accuracy and never supplies data; DESIGN.md §2 explains why. What the source text turned out to be, including its damage and gaps, is in [docs/phase-0-notes.md](docs/phase-0-notes.md).
@@ -109,7 +111,7 @@ cd ~/w1913.com          # the checkout
 ./rebuild.sh --rollback # back to the previous release
 ```
 
-Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.11.0 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
+Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.12.0 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
 
 ## Licence
 

@@ -380,9 +380,9 @@ Programs such as Drafter or a Markdown editor need to look words up. W1913 gives
 ### What is published
 
 1. **Edition downloads**: every release in full (§3a): JSONL plus `manifest.json`.
-2. **A lookup build**: a compact file for programs that only need to look words up (headword, variants, part of speech, sense text; estimated 25–30 MB, roughly a third of that compressed; to be measured). Published with each release.
-3. **`@w1913/lookup`**: a small package that reads the lookup build and exposes `lookup(word)`, with the same folding and suffix stripping as the site, so a program and w1913.com give the same answer.
-4. **Static shards** at `w1913.com/data/<version>/<prefix>.json` (one per two-letter prefix, about 600 files), for a browser program that may fetch from w1913.com. Plain files, served and cached by nginx; no keys, no accounts, no personal data. The existing nginx rate limit is the only guard they need.
+2. **A lookup build**: a compact file for programs that only need to look words up (headword, variants, part of speech, sense text; estimated 25–30 MB, roughly a third of that compressed; to be measured). Published with each release. **Measured (v0.12.0, edition 0.6): 22.7 MB of JSON, 7.5 MB gzipped** (98,365 pages, 114,326 forms; block quotations left out of sense text). Written by the site's `db:import` from the same rows as the database, so it cannot disagree with the site.
+3. **`@w1913/lookup`**: a small package that reads the lookup build and exposes `lookup(word)`, with the same folding and suffix stripping as the site, so a program and w1913.com give the same answer. Built in v0.12.0 (`packages/lookup`, no dependencies, compiles to plain ESM for npm): the folding and the stripper now live there and the site imports them, and a test checks `lookup()` against the site on 200 fixed words, from the whole build and from shards. A lookup takes about 0.4 ms once the build is loaded.
+4. **Static shards** at `w1913.com/data/<version>/<prefix>.json` (one per two-letter prefix, about 600 files), for a browser program that may fetch from w1913.com. Plain files, served and cached by nginx; no keys, no accounts, no personal data. The existing nginx rate limit is the only guard they need. **Built in v0.12.0:** 362 shards (the prefixes that occur), each with the pages its forms reach, plus `index.json`; written as files beside the database by `db:import` (24 MB) and read one per request, so the server's memory does not grow (loading the whole build in the server took it from 116 MB to 402 MB, near PM2's 450 MB limit); served with a one-year cache and `Access-Control-Allow-Origin: *`. The nginx rate limit is still the sketch in `docs/nginx-site.conf`, not yet applied.
 
 ### Drafter
 
@@ -547,10 +547,10 @@ Data and site advance together, one layer at a time. The edition is never "finis
 
 1. Whether to register `w1913.dev` / `w1913.app` as well. (`w1913.com` was registered at DNSimple on 24 Nov 2026.)
 2. What precision is good enough to ship quotation search? (Proposed starting bar: 95% on the scored sample.) **Answered:** 95% was the bar; data 0.6 measured 97.7% (§2 problem 5 and §4).
-3. Where is the edition published? (Default: release assets on `cschweda/w1913`; npm is the alternative.)
+3. Where is the edition published? (Default: release assets on `cschweda/w1913`; npm is the alternative.) `scripts/release-assets.sh` prepares the assets (the edition as a tarball, the lookup build, SHA-256 sums) and prints the `gh release create` command; publishing stays a person's decision.
 4. Is meaning-based search worth a model dependency?
 5. Should the trail survive closing the tab? (Default: no. It lasts for the tab's session; saved lists are the permanent record.)
-6. In what form does the lookup build ship: SQLite or a compact JSON index? (Decide by measuring size and lookup speed in Drafter's Electron and browser builds.)
+6. In what form does the lookup build ship: SQLite or a compact JSON index? (Decide by measuring size and lookup speed in Drafter's Electron and browser builds.) **Answered (v0.12.0): compact JSON.** 22.7 MB (7.5 MB gzipped) loads in Electron, the browser and Node without a database engine (SQLite in a browser needs WebAssembly), and a lookup takes about 0.4 ms.
 7. Does the lookup build come with Drafter's installer or as an optional download inside it? (Default: optional download, since it is far larger than the spellcheck dictionary.)
 
 ---

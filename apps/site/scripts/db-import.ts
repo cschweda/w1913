@@ -4,7 +4,10 @@
 // database to $W1913_DB_PATH (default cache/db/w1913.sqlite). The file is
 // written under a temporary name and renamed, so a failed import never
 // leaves a half-built database where the site would open it.
-import { createReadStream, existsSync, mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
+import { createReadStream, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
+import type { BuildPage, BuildSense, LookupBuild } from "../../../packages/lookup/src/format.ts";
+import { makeShards } from "../../../packages/lookup/src/shards.ts";
 import path from "node:path";
 import readline from "node:readline";
 import { fileURLToPath } from "node:url";
@@ -166,6 +169,8 @@ const summaryOf = (e: Entry) =>
   e.senses.filter((s) => s.text.trim()).slice(0, 2).map((s, i) => `${s.n ?? i + 1}. ${prose(s.text).replace(/&[a-z#0-9]+;/g, (m) => ({ "&amp;": "&", "&quot;": '"', "&#39;": "'", "&lt;": "<", "&gt;": ">" })[m] ?? m)}`).join("  ").slice(0, 420);
 const insPage = db.prepare(`INSERT INTO pages VALUES (?,?,?,?,?)`);
 const insForm = db.prepare(`INSERT INTO forms VALUES (?,?,?,?,?)`);
+/** The form rows as inserted, for the lookup build (same order as the table). */
+const formRows: { fold: string; form: string; slug: string; kind: string; ord: number }[] = [];
 const insBack = db.prepare(`INSERT INTO backlinks VALUES (?,?,?,?)`);
 
 // Words that point here (reverse cross-references): one row per pair of
@@ -205,6 +210,7 @@ db.transaction(() => {
       if (!f || seen.has(f)) continue;
       seen.add(f);
       insForm.run(f, form, slug, kind, e.ord);
+      formRows.push({ fold: f, form, slug, kind, ord: e.ord });
     }
   }
   [...pages.entries()]
@@ -317,6 +323,67 @@ db.exec(`
 `);
 db.close();
 renameSync(tmp, dbPath);
+
+// The lookup build (DESIGN.md §4b; packages/lookup): every page with its
+// entries' parts of speech and senses (block quotations left out), and the
+// form maps that reproduce the site's lookup queries exactly: headwords and
+// variants before listed inflections, then dictionary order; for stems,
+// prefixes and suffixes ("Com-") never count.
+{
+  const pageList = [...pages.entries()].sort((a, b) => a[1][0]!.ord - b[1][0]!.ord);
+  const pageIndex = new Map(pageList.map(([slug], i) => [slug, i]));
+  const clean = (s: string) => s.replace(/\s+/g, " ").replace(/--/g, "\u2014").trim();
+  const withoutBlockQuotes = (e: Entry, i: number, sub: number | null, text: string) => {
+    let out = "";
+    let at = 0;
+    for (const q of e.quotes.filter((x) => x.sense === i && x.sub === sub && x.kind === "block").sort((a, b) => a.start - b.start)) {
+      out += text.slice(at, q.start);
+      at = Math.min(text.length, q.authorEnd + 1);
+    }
+    return clean(out + text.slice(at));
+  };
+  const builtPages: BuildPage[] = pageList.map(([slug, list]) => [
+    slug,
+    list[0]!.headword,
+    list.map((e) => [
+      e.pos,
+      e.senses.map((s, i): BuildSense => {
+        const sub = s.sub.map((x, j) => [x.letter, withoutBlockQuotes(e, i, j, x.text)] as [string, string]);
+        const text = withoutBlockQuotes(e, i, null, s.text);
+        return sub.length ? [s.n, text, sub] : [s.n, text];
+      }),
+    ]),
+  ]);
+  const order = [...formRows].sort((a, b) => Number(a.kind === "inflection") - Number(b.kind === "inflection") || a.ord - b.ord);
+  const forms: Record<string, number> = {};
+  const stemFirst: Record<string, number> = {};
+  for (const r of order) {
+    if (!(r.fold in forms)) forms[r.fold] = pageIndex.get(r.slug)!;
+    if (!/^-|-$/.test(r.form) && !(r.fold in stemFirst)) stemFirst[r.fold] = pageIndex.get(r.slug)!;
+  }
+  const stemForms: Record<string, number> = {};
+  for (const [f, i] of Object.entries(forms)) if (stemFirst[f] !== i) stemForms[f] = stemFirst[f] ?? -1;
+  const build: LookupBuild = {
+    format: "w1913-lookup", formatVersion: 1, edition: manifest.version,
+    siteVersion: (JSON.parse(readFileSync(path.join(repo, "package.json"), "utf8")) as { version: string }).version,
+    built: new Date().toISOString(), licence: "CC0-1.0",
+    source: "Webster's Revised Unabridged Dictionary (1913), from Project Gutenberg eBook #29765, via the W1913 edition",
+    site: config.site.url, reserved: [...config.reservedWords], pages: builtPages, forms, stemForms,
+  };
+  const json = JSON.stringify(build);
+  const lookupFile = path.join(path.dirname(dbPath), `w1913-lookup-${manifest.version}.json`);
+  writeFileSync(lookupFile, json);
+  const gz = gzipSync(json, { level: 9 });
+  writeFileSync(`${lookupFile}.gz`, gz);
+  // Static shards as files beside it, so the server only ever reads the one a request names.
+  const shardDir = path.join(path.dirname(dbPath), `shards-${manifest.version}`);
+  rmSync(shardDir, { recursive: true, force: true });
+  mkdirSync(shardDir, { recursive: true });
+  const shards = makeShards(build);
+  for (const [prefix, shard] of shards) writeFileSync(path.join(shardDir, `${prefix}.json`), JSON.stringify(shard));
+  writeFileSync(path.join(shardDir, "index.json"), JSON.stringify({ format: "w1913-lookup-shards", formatVersion: 1, edition: manifest.version, site: config.site.url, licence: "CC0-1.0", prefixes: [...shards.keys()].sort(), shard: `${config.site.url}/data/${manifest.version}/<prefix>.json` }));
+  console.log(`Lookup build: ${builtPages.length} pages, ${Object.keys(forms).length} forms, ${(json.length / 1e6).toFixed(1)} MB, ${(gz.length / 1e6).toFixed(1)} MB gzipped; ${shards.size} shards`);
+}
 // A slug that folds two different spellings together would make a page show
 // entries that do not match its headword; report it rather than hide it.
 console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, ${[...backlinks.values()].reduce((a, m) => a + m.size, 0)} backlinks, ${unusualMarked} unusual words, ${cardOk} card_ok entries, in ${Math.round(performance.now() - t0)} ms`);

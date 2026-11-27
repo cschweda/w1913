@@ -1,0 +1,18 @@
+{
+  "name": "@w1913/lookup",
+  "version": "0.1.0",
+  "description": "Look words up in the 1913 Webster's offline, with the same answers as w1913.com.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "repository": { "type": "git", "url": "git+https://github.com/cschweda/w1913.git", "directory": "packages/lookup" },
+  "keywords": ["dictionary", "webster", "1913", "offline", "lookup"]
+}
