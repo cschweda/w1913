@@ -69,8 +69,11 @@ code they test.
 
 ## What to do now: Phase 0 only
 1. Scaffold the workspace at the root (pnpm-workspace.yaml, root
-   package.json with "engines": {"node": ">=24"}, tsconfig, Vitest,
-   ESLint), then create packages/data. Apart from this scaffold and the
+   package.json with "engines": {"node": ">=24"} and
+   "packageManager": "pnpm@12.16.1", tsconfig, Vitest, ESLint), then
+   create packages/data. pnpm 12.16.1 is what the droplet runs; if your
+   pnpm is a different major version, stop and tell me rather than
+   committing a lockfile it wrote. Apart from this scaffold and the
    CHANGELOG, work only in packages/data.
 2. Write packages/data/src/download.ts. packages/data/checksums.json holds
    the pinned SHA-256 for #29765 (copy it from DESIGN.md section 2). Verify
@@ -173,7 +176,16 @@ keep them working:
 - At runtime the site reads W1913_DB_PATH, HOST, and PORT, opens the
   database read-only, and serves GET /healthz: 200 once the database is
   open, 503 otherwise. `/` and `/sublime` must answer 200.
-- pnpm-lock.yaml is committed (the deploy uses --frozen-lockfile).
+- pnpm-lock.yaml is committed, written by pnpm 12.16.1 (the version in
+  "packageManager" and on the droplet). The deploy uses --frozen-lockfile,
+  which fails on a lockfile from another major version.
+- The whole deploy must finish in well under 10 minutes on the droplet
+  (2 vCPU), because Forge's Deploy button kills anything longer. So
+  `edition` is incremental: it keys its output in cache/editions/ by the
+  source checksum, the parser version, and the layers requested, and
+  when a matching edition already exists it verifies the file and returns
+  without re-parsing. A parser change bumps the parser version. Report
+  the timing of a cold and a warm `edition` run, and of `db:import`.
 
 ## Standing rules for later phases
 - Do not edit rebuild.sh or ecosystem.config.cjs without telling me why;
