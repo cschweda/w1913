@@ -9,11 +9,12 @@ import { sha256Bytes, sha256File } from "../source/checksum.ts";
 import { loadCanonical } from "../source/load.ts";
 import { slice, type SliceName } from "../audit/slices.ts";
 import { segment } from "../segment/segment.ts";
-import { Manifest, SegmentEntry, type Layer } from "./schema.ts";
+import { EditionEntry, Manifest, type Layer } from "./schema.ts";
 import { toSegmentEntries } from "./segment-layer.ts";
+import { makeResolver, toSensesEntry } from "./senses-layer.ts";
 
 /** Bump whenever a parser change can alter the edition's content. */
-export const PARSER_VERSION = "0.0.1";
+export const PARSER_VERSION = "0.1.1";
 
 export interface ReleaseSpec {
   version: string;
@@ -22,6 +23,13 @@ export interface ReleaseSpec {
 }
 
 export const SPIKE_RELEASE: ReleaseSpec = { version: "0.0", layers: ["segment"], scope: ["X-Z", "SU"] };
+
+/** Every release the data package can build, oldest first (DESIGN.md §3a). */
+export const RELEASES: readonly ReleaseSpec[] = [
+  SPIKE_RELEASE,
+  { version: "0.1", layers: ["segment"], scope: "all" },
+  { version: "0.2", layers: ["segment", "senses"], scope: "all" },
+];
 
 export interface BuildResult {
   dir: string;
@@ -61,7 +69,9 @@ export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } 
 
   const canonical = await loadCanonical();
   const { entries: raw } = segment(canonical.lines, canonical.firstLineNumber);
-  const all = toSegmentEntries(raw);
+  const segmentLayer = toSegmentEntries(raw);
+  const resolve = spec.layers.includes("senses") ? makeResolver(segmentLayer) : null;
+  const all = resolve ? segmentLayer.map((e, i) => toSensesEntry(e, raw[i]!, resolve)) : segmentLayer;
   const chosen =
     spec.scope === "all"
       ? all
@@ -72,7 +82,7 @@ export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } 
 
   // Validate every line against the schema before anything is written.
   const lines = chosen.map((e, i) => {
-    const r = SegmentEntry.safeParse(e);
+    const r = EditionEntry.safeParse(e);
     if (!r.success) throw new Error(`Entry ${i} (${e.id}) fails the schema: ${r.error.message}`);
     return JSON.stringify(r.data);
   });

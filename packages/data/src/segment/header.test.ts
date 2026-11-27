@@ -24,7 +24,8 @@ describe("parseHeader", () => {
   it("reports no part of speech when there is none", () => {
     const h = parseHeader("Lymph node. (Anat.)");
     expect(h.pos).toBeNull();
-    expect(h.marked).toBe("Lymph node.");
+    expect(h.marked).toBe("Lymph node");
+    expect(parseHeader("A 1. A registry mark given by underwriters (as at Lloyd's)").marked).toBe("A 1");
   });
   it("does not read a word inside an etymology as a part of speech", () => {
     expect(parseHeader('Yarn, n. Etym: [OE. yarn, AS. gearn').pos).toBe("n.");

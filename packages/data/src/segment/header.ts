@@ -9,7 +9,7 @@ const ATOM = String.raw`(?:n|a|v|t|i|adv|prep|conj|interj|pron|p|pr|pa|pl|sing|i
 const TERM = String.raw`${ATOM}(?:\s?${ATOM})*`;
 const POS = String.raw`${TERM}(?:\s&\s${TERM})*`;
 const POS_AFTER_FORMS = new RegExp(String.raw`(?:,\s*|\s)(${POS})(?=\s|$|[\[(;,])`);
-const FORMS_END = /,\s|\sEtym:|\s\[|\s\(/;
+const FORMS_END = /,\s|\.\s|\sEtym:|\s\[|\s\(/;
 
 export interface Header {
   /** The marked form(s) as printed, before the part of speech. */
@@ -27,29 +27,35 @@ export interface Header {
  * space after the first form and is followed by a space, a bracket, a comma,
  * a semicolon, or the end of the line. The marked forms are everything
  * before it, cut at the first " (" (a pronunciation respelling follows some
- * forms). With no part of speech, the forms end at the first ", ",
- * " Etym:", " [" or " (".
+ * forms). Both are looked for only before the first "Etym:" or " [". With no
+ * part of speech, the forms end at the first ", ", ". ", " Etym:", " [" or
+ * " (" ("A 1. A registry mark ..." has the form "A 1").
+ * Forms are separated by ", ", ", or ", " or ", or a run of spaces.
  */
 export function parseHeader(line: string): Header {
-  const firstFormEnd = line.search(/[,\s]/);
-  const searchFrom = firstFormEnd < 0 ? line.length : firstFormEnd;
-  const m = POS_AFTER_FORMS.exec(line.slice(searchFrom));
+  // Forms and part of speech come before any etymology or bracket; never
+  // look for them inside "Etym: [OE. beon, ben, bin, p. p. of been ...]".
+  const stop = line.search(/Etym:|\s\[/);
+  const region = stop < 0 ? line : line.slice(0, stop);
+  const firstFormEnd = region.search(/[,\s]/);
+  const searchFrom = firstFormEnd < 0 ? region.length : firstFormEnd;
+  const m = POS_AFTER_FORMS.exec(region.slice(searchFrom));
   let marked: string;
   let pos: string | null = null;
   if (m) {
     marked = line.slice(0, searchFrom + m.index);
     pos = m[1]!.trim();
   } else {
-    const end = line.search(FORMS_END);
-    marked = end < 0 ? line : line.slice(0, end);
+    const end = region.search(FORMS_END);
+    marked = end < 0 ? region : region.slice(0, end);
   }
   // A pronunciation respelling in parentheses follows some forms
   // (`Cor"net*er (kr"nt-r), n.`). It is not part of the form; it stays in the
   // entry's text.
   const paren = marked.search(/(^|\s)\(/);
   if (paren >= 0) marked = marked.slice(0, paren);
-  marked = marked.replace(/[,\s]+$/, "");
-  const forms = marked.split(/,\s*(?:or\s+)?|\s+or\s+/).map((f) => f.trim()).filter(Boolean);
+  marked = marked.replace(/[,;\s]+$/, "");
+  const forms = marked.split(/,\s*(?:or\s+)?|;\s*|\s+or\s+|\s{2,}/).map((f) => f.trim()).filter(Boolean);
   return { marked, forms, pos };
 }
 
@@ -82,17 +88,30 @@ export interface DisplayForm {
  * capitals. The headword line drops letters it cannot spell in ASCII
  * ("CAADA" for Cañada) and the header line sometimes drops œ ("Au*to"cious"
  * for AUTOECIOUS), so when no form matches, the header form in the same
- * position is compared with the variant and the longer folded spelling wins:
- * the one that lost fewer letters.
+ * position is used only when it adds one to three letters to the variant's
+ * folded spelling and contains all of them in order (the headword line lost
+ * them); otherwise the headword line is used. A trailing full stop on a form
+ * is dropped.
  */
 export function displayForm(variant: string, forms: readonly string[], index: number): DisplayForm {
   const fv = foldForCompare(variant);
   const same = forms[index];
+  // A trailing full stop on a form ("Been.") is punctuation, unless the
+  // headword line has one too.
+  const shown = (f: string) => {
+    const t = stripMarks(f);
+    return t.endsWith(".") && !variant.endsWith(".") ? t.slice(0, -1) : t;
+  };
   // Prefer the form in the same position: "X rays" and "X-rays" fold alike.
-  if (same && foldForCompare(same) === fv) return { text: stripMarks(same), source: "header" };
+  if (same && foldForCompare(same) === fv) return { text: shown(same), source: "header" };
   const exact = forms.find((f) => foldForCompare(f) === fv);
-  if (exact) return { text: stripMarks(exact), source: "header" };
-  if (same && foldForCompare(same).length > fv.length) return { text: stripMarks(same), source: "header" };
+  if (exact) return { text: shown(exact), source: "header" };
+  // The header form may keep letters the ASCII headword line dropped
+  // ("Cañada" for CAADA), but only a few, and only by adding letters.
+  if (same) {
+    const fs = foldForCompare(same);
+    if (fs.length > fv.length && fs.length <= fv.length + 3 && isSubsequenceOf(fv, fs)) return { text: shown(same), source: "header" };
+  }
   return { text: fromCapitals(variant), source: "headword-line" };
 }
 
@@ -112,4 +131,10 @@ export function isUmlautTransliteration(variant: string, forms: readonly string[
   const fv = foldForCompare(variant);
   if (forms.some((f) => foldForCompare(f) === fv)) return false;
   return forms.some((f) => /[öüäÖÜÄ]/.test(f) && foldForCompare(umlautAsE(f)) === fv);
+}
+
+function isSubsequenceOf(short: string, long: string): boolean {
+  let j = 0;
+  for (let i = 0; i < long.length && j < short.length; i++) if (long[i] === short[j]) j++;
+  return j === short.length;
 }

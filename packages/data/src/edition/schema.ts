@@ -29,6 +29,49 @@ export const SegmentEntry = z
   .strict();
 export type SegmentEntry = z.infer<typeof SegmentEntry>;
 
+const Xref = z
+  .object({
+    /** Offsets of the linked word in the block's text. */
+    start: z.number().int().nonnegative(),
+    end: z.number().int().positive(),
+    to: z.string(),
+    pos: z.string().nullable(),
+    sense: z.number().int().positive().nullable(),
+    /** The entry id it resolves to, or null when no headword matches. */
+    id: z.string().nullable(),
+  })
+  .strict();
+const Block = z.object({ text: z.string(), xrefs: z.array(Xref) }).strict();
+const Sense = z
+  .object({
+    n: z.number().int().positive().nullable(),
+    text: z.string(),
+    xrefs: z.array(Xref),
+    sub: z.array(z.object({ letter: z.string().regex(/^[a-z]$/), text: z.string(), xrefs: z.array(Xref) }).strict()),
+    notes: z.array(Block),
+  })
+  .strict();
+
+/** Fields the "senses" layer (data 0.2) adds. All text is as printed, lines joined with "\n". */
+export const SensesFields = z.object({
+  inflections: z.string().nullable(),
+  etymology: Block.nullable(),
+  headerLabels: z.array(z.string()),
+  headerMarks: z.array(z.string()),
+  spellings: z.array(z.string()),
+  headerRest: z.string().nullable(),
+  senses: z.array(Sense),
+  notes: z.array(Block),
+  syn: z.string().nullable(),
+});
+
+export const SensesEntry = SegmentEntry.extend(SensesFields.shape).strict();
+export type SensesEntry = z.infer<typeof SensesEntry>;
+
+/** Any edition line: the segment layer alone, or with the senses layer. */
+export const EditionEntry = z.union([SensesEntry, SegmentEntry]);
+export type EditionEntry = z.infer<typeof EditionEntry>;
+
 export const Manifest = z
   .object({
     edition: z.literal("w1913"),
