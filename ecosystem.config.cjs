@@ -10,7 +10,7 @@
 //     current -> releases/<…>          symlink, switched atomically by rebuild.sh
 //
 // PM2 always runs `current/…`, so a deploy or a rollback is a symlink switch
-// plus `pm2 reload`. The script path in this file never changes.
+// plus a PM2 restart. The script path in this file never changes.
 //
 // PM2 applies the options below only when the process is REGISTERED. A plain
 // reload keeps the old values (and the old interpreter). rebuild.sh therefore
@@ -30,15 +30,17 @@ module.exports = {
       cwd: current,
       script: path.join(current, "apps/site/.output/server/index.mjs"),
 
-      // Run the server on the Node that runs this PM2 command, not on whatever
-      // Node the PM2 daemon happened to start under months ago. rebuild.sh
-      // loads the Node version from .nvmrc before calling PM2.
+      // Fork mode, one process, on the Node that runs this PM2 command (the
+      // .nvmrc version, which rebuild.sh loads through nvm). Not cluster mode:
+      // in cluster mode PM2 ignores `interpreter` and runs workers on the
+      // daemon's own Node, which on the droplet is the system Node 22.
+      // better-sqlite3 is compiled for Node 24 at build time, so a worker on
+      // Node 22 would crash on its first require. A reload therefore restarts
+      // the one process (a second or two); nginx serves cached pages, or
+      // stale ones, through the gap.
       interpreter: process.execPath,
-
-      // Cluster mode lets `pm2 reload` swap workers one at a time, with no
-      // gap in service. The database is opened read-only by every worker.
-      exec_mode: "cluster",
-      instances: Number(process.env.W1913_INSTANCES || 2),
+      exec_mode: "fork",
+      instances: 1,
 
       env: {
         NODE_ENV: "production",

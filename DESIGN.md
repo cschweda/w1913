@@ -181,7 +181,8 @@ Why split:
 ### Stack and hosting
 
 - **Nuxt 4**, **Nuxt UI v4**, **pnpm**, TypeScript. `better-sqlite3`, read-only at runtime, **FTS5**.
-- **Hosting:** the existing Forge-provisioned DigitalOcean droplet that already runs the file accessibility audit (audit.icjia.app). Nuxt SSR (node-server preset) under **PM2**, which is already on the droplet, behind nginx. Decided against Netlify (27 Nov 2026): the SQLite database is too large for a serverless function bundle. 2 GB RAM recommended; 1 GB works with swap or an off-box build.
+- **Hosting:** the Forge-provisioned DigitalOcean droplet `graceful-monet` (NYC1; 4 GB RAM, 2 vCPU, 80 GB disk; Ubuntu 26.04; IPv4 68.183.96.208, IPv6 2604:a880:400:d1:0:5:54e2:b001). It also runs one small PM2 app (`pictures`, pictures.metaincognita.com). Nuxt SSR (node-server preset) under **PM2** behind nginx. Decided against Netlify (27 Nov 2026): the SQLite database is too large for a serverless function bundle.
+- **Node:** the droplet's system Node is 22, which the PM2 daemon and the other app use. W1913 runs on Node 24 from nvm for the `forge` user, with `nvm alias default system` so other shells stay on 22; `rebuild.sh` switches itself to the `.nvmrc` version.
 - nginx caches entry pages; cache purged on deploy. Rate limiting at nginx (`limit_req`).
 - The build reads only the canonical file. A separate `pnpm eval` command reads the tagged files and scores the build; CI does not need them.
 
@@ -190,9 +191,9 @@ Why split:
 Deploys are manual: after a push to `main`, run `./rebuild.sh` in the checkout on the droplet. Forge's Quick Deploy stays off for this site.
 
 - **Releases, not in-place builds.** Each deploy builds a complete release (`git archive` of HEAD, install, edition, SQLite import, Nuxt build) in `~/w1913-deploy/releases/<stamp>-<sha>/`. The live site is the `current` symlink. A build failure never touches what is serving.
-- **Canary, then switch.** The new release first runs on a spare port (3914) and must answer `/healthz` and the smoke paths (`/`, `/sublime`). Only then is `current` switched and PM2 reloaded. PM2 runs in cluster mode, so a reload replaces workers one at a time.
+- **Canary, then switch.** The new release first runs on a spare port (3914) and must answer `/healthz` and the smoke paths (`/`, `/sublime`). Only then is `current` switched and PM2 restarted. W1913 runs as one process in fork mode, because cluster mode would ignore the pinned interpreter and run on the daemon's Node 22, where the Node 24 build of better-sqlite3 cannot load. The restart takes a second or two; nginx serves cached or stale pages through it.
 - **Health gate and rollback.** If the live port (3913) fails its check, the symlink goes back to the previous release automatically. `./rebuild.sh --rollback` does the same by hand. The newest five releases are kept.
-- **Shared droplet.** PM2 commands always name the `w1913` app, never `all`, and the ports avoid file-audit's (5102/5103). `ecosystem.config.cjs` pins the interpreter to the Node from `.nvmrc`.
+- **Shared droplet.** PM2 commands always name the `w1913` app, never `all`, so the other app is never touched. Ports 3913 and 3914 listen on 127.0.0.1 only. `ecosystem.config.cjs` pins the interpreter to the Node from `.nvmrc`.
 - **Contract with the code.** `rebuild.sh` relies on three package scripts (`@w1913/data` `edition`, `@w1913/site` `db:import` and `build`), on `W1913_DB_PATH`, and on a `/healthz` route that answers 200 once the database is open. KICKOFF.md lists them.
 - The canonical source is copied to `cache/sources/29765.txt` in the droplet's checkout once, by hand, in case gutenberg.org refuses the server; the edition step verifies its checksum either way.
 
@@ -485,7 +486,7 @@ Data and site advance together, one layer at a time. The edition is never "finis
 | Heuristics find quotations and cross-references less precisely than tags would | Measured two ways (hand-labelled sample; answer key from the tagged edition); a feature ships only above an agreed precision |
 | Tagged files stay unreachable, so there is no answer key | Fall back to larger hand-labelled samples; nothing in the build depends on the tagged files |
 | Upstream file changes | Pinned checksum |
-| A bad deploy takes the site down, or disturbs file-audit on the same droplet | Releases built side by side; canary check before the switch; automatic rollback; PM2 commands scoped to `w1913`; separate ports |
+| A bad deploy takes the site down, or disturbs the other app on the same droplet | Releases built side by side; canary check before the switch; automatic rollback; PM2 commands scoped to `w1913`; separate ports |
 | Project Gutenberg site outages | The download step accepts a file placed by hand and verifies it against the pinned checksum; a verified copy is already held |
 | Definition search disappoints | Labelled honestly; embeddings path identified |
 | Period check misleads | Wording and stated limits |
@@ -497,7 +498,7 @@ Data and site advance together, one layer at a time. The edition is never "finis
 
 ## 8. Open questions
 
-1. Register `w1913.com` (and `.dev` / `.app` if wanted); all three were unregistered on 15 Nov 2026.
+1. Whether to register `w1913.dev` / `w1913.app` as well. (`w1913.com` was registered at DNSimple on 24 Nov 2026.)
 2. What precision is good enough to ship quotation search? (Proposed starting bar: 95% on the scored sample.)
 3. Where is the edition published? (Default: release assets on `cschweda/w1913`; npm is the alternative.)
 4. Is meaning-based search worth a model dependency?
@@ -516,7 +517,7 @@ Data and site advance together, one layer at a time. The edition is never "finis
 - Reserved route words link to the word's entry (§3). The period check's word list is described (§4).
 - Typeface settled: self-hosted Inter first (§4a); open question 4 removed. `--ln` is decorative only (WCAG 1.4.11). "On this page" and Neighbors are separate landmarks (§5). The mockups were updated to match, and the Phase 1 mockup no longer shows detected quotations.
 - Checksums live in `packages/data/checksums.json`.
-- Hosting settled: the Forge droplet that runs the file accessibility audit, under PM2, not Netlify. Added §3 "Deploying": `rebuild.sh` builds releases side by side, tests a canary, switches a symlink, and rolls back on a failed health check. `ecosystem.config.cjs` added.
+- Hosting settled: the Forge droplet `graceful-monet`, under PM2 (one fork-mode process on Node 24), not Netlify. `w1913.com` registered. Added §3 "Deploying": `rebuild.sh` builds releases side by side, tests a canary, switches a symlink, and rolls back on a failed health check. `ecosystem.config.cjs` added.
 
 **Draft 5.3**
 - Added cards (§1, §4): decks that are random, by label, by search, or from the trail and saved list; reverse mode; self-rating without scheduling. Phased across 2, 3, 5, and 6 (§6).

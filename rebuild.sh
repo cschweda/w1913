@@ -21,8 +21,8 @@
 #      SQLite import, Nuxt build.
 #   4. Starts the new release on a spare port (the canary) and checks
 #      /healthz and the smoke paths. A release that fails here never goes live.
-#   5. Switches the `current` symlink atomically and reloads PM2 (cluster
-#      mode, so workers are replaced one at a time).
+#   5. Switches the `current` symlink atomically and reloads PM2 (one
+#      process in fork mode: a restart of a second or two; nginx covers it).
 #   6. Health gate on the live port. If it fails, the symlink goes back to
 #      the previous release automatically and PM2 reloads again.
 #   7. Optionally empties the nginx cache, then prunes old releases.
@@ -215,7 +215,7 @@ _pm2_apply() {  # (re)start PM2 from the live release's ecosystem file
     pm2 delete "$APP_NAME"
     pm2 start "$eco"
   else
-    echo "Reloading $APP_NAME (workers replaced one at a time)..."
+    echo "Reloading $APP_NAME..."
     pm2 reload "$eco" --update-env
   fi
   echo "$new_hash" > "$hash_file"
@@ -237,7 +237,9 @@ _need pm2  "Run: npm install -g pm2, then pm2 startup (once) so it survives rebo
 if command -v node > /dev/null 2>&1; then
   _node_major="$(node --version | grep -oE '[0-9]+' | head -1)"
   if [ "${_node_major:-0}" != "$WANT_NODE" ]; then
-    echo "ERROR: node $(node --version) is on PATH; .nvmrc asks for $WANT_NODE. Run: nvm install $WANT_NODE"
+    echo "ERROR: node $(node --version) is on PATH; .nvmrc asks for $WANT_NODE."
+    echo "  Install nvm for this user, then: nvm install $WANT_NODE && nvm alias default system"
+    echo "  (the alias keeps other apps' shells on the system Node; this script switches itself)."
     _fail=1
   fi
 fi
