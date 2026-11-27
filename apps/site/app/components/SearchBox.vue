@@ -83,7 +83,7 @@ const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl 
 
 <template>
   <form role="search" :class="['box', size === 'hero' ? 'is-hero' : 'is-bar']" @submit.prevent="freeText(term)">
-    <h1 v-if="size === 'hero'" class="ask"><label for="lookup">Look up any word in the 1913 Webster's</label></h1>
+    <h1 v-if="size === 'hero'" class="ask"><label for="lookup">Look up any word in the 1913 Webster's Dictionary</label></h1>
     <label v-else for="lookup" class="cap lbl">Look up a word</label>
     <div class="row">
     <UInputMenu

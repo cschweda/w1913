@@ -343,7 +343,7 @@ Everything is built from the plain text. Features marked **P** rest on structure
 
 More play than tool, but reading a dictionary is how many writers find words, and a deck is a way to do it a few minutes at a time.
 
-- **Cards** (P) at `/cards`: one word at a time from a deck. The front shows the word; flipping shows the part of speech, the first two or three senses, the entry's synonym words, and a link to the full entry. A quotation is added to the back when the `quotes` layer ships.
+- **Cards** (P) at `/cards`: one word at a time from a deck. Random and trail decks, synonyms on the back, and reverse mode shipped in v0.7.0 (79,594 entries are `card_ok`); a visible note says cards are drawn from a 1913 dictionary and shown as printed. The front shows the word; flipping shows the part of speech, the first two or three senses, the entry's synonym words, and a link to the full entry. A quotation is added to the back when the `quotes` layer ships.
 - **Decks:**
   - *Random*: drawn from entries marked `card_ok`.
   - *By label*: any usage or subject label (`/cards?deck=label:naut`).

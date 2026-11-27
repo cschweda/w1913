@@ -14,6 +14,7 @@ import { foldForCompare } from "../shared/fold.ts";
 import { posAnchor, posTitle } from "../shared/pos.ts";
 import { bodyHtml, essayHtml, metaHtml, prose, type Locate, type RenderableEntry } from "../shared/render.ts";
 import { definitionFrequency, unusualSpans } from "../shared/unusual.ts";
+import { cardSenses, isCardOk } from "../shared/cards.ts";
 import { entryPath } from "../shared/fold.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -79,7 +80,8 @@ db.exec(`
     id TEXT PRIMARY KEY, slug TEXT NOT NULL, ord INTEGER NOT NULL, homograph_no INTEGER NOT NULL,
     anchor TEXT NOT NULL, headword TEXT NOT NULL, headword_marked TEXT, pos TEXT, pos_title TEXT,
     letter TEXT NOT NULL, sense_count INTEGER NOT NULL, meta_html TEXT NOT NULL, body_html TEXT NOT NULL,
-    text TEXT NOT NULL, summary TEXT NOT NULL, first_sense TEXT NOT NULL
+    text TEXT NOT NULL, summary TEXT NOT NULL, first_sense TEXT NOT NULL,
+    card_ok INTEGER NOT NULL, card_json TEXT NOT NULL
   );
   CREATE TABLE syn_listed (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
   CREATE TABLE essays (id INTEGER PRIMARY KEY, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_anchor TEXT NOT NULL,
@@ -89,7 +91,13 @@ db.exec(`
   CREATE TABLE forms (fold TEXT NOT NULL, form TEXT NOT NULL, slug TEXT NOT NULL, kind TEXT NOT NULL, ord INTEGER NOT NULL);
   CREATE TABLE backlinks (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
 `);
-const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense)`);
+const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense,@card_ok,@card_json)`);
+let cardOk = 0;
+/** The card for an entry: its first senses and its synonym words (shared/cards.ts). */
+const cardOf = (e: Entry) => ({
+  senses: cardSenses(e.senses.flatMap((s) => (s.text.trim() ? [s.text] : s.sub.map((x) => x.text)))),
+  similar: (e.synonyms?.words ?? []).slice(0, 8).map((w) => ({ text: w.text, slug: w.id && byId.get(w.id) ? slugOf(byId.get(w.id)!) : null })),
+});
 
 // Unusual words (shared/unusual.ts): frequency over every entry's sense texts,
 // and headword lookup by folded spelling (first page in edition order).
@@ -151,6 +159,7 @@ db.transaction(() => {
       letter: (foldForCompare(e.headword)[0] ?? "#").toUpperCase(),
       sense_count: e.senses.filter((s) => s.n !== null).length,
       meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor, unusualFor(e)), text: e.text, summary: summaryOf(e), first_sense: firstSenseOf(e),
+      card_ok: isCardOk(senseTexts(e)) ? (cardOk++, 1) : 0, card_json: JSON.stringify(cardOf(e)),
     });
     const seen = new Set<string>();
     for (const [form, kind] of [[e.headword, "headword"], ...e.variants.map((v) => [v, "variant"])] as [string, string][]) {
@@ -209,11 +218,12 @@ db.exec(`
   CREATE INDEX syn_listed_slug ON syn_listed (slug, from_ord);
   CREATE INDEX essay_pages_slug ON essay_pages (slug);
   CREATE INDEX essays_sort ON essays (sort_key);
+  CREATE INDEX entries_card ON entries (card_ok);
   ANALYZE;
 `);
 db.close();
 renameSync(tmp, dbPath);
 // A slug that folds two different spellings together would make a page show
 // entries that do not match its headword; report it rather than hide it.
-console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, ${[...backlinks.values()].reduce((a, m) => a + m.size, 0)} backlinks, ${unusualMarked} unusual words, in ${Math.round(performance.now() - t0)} ms`);
+console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, ${[...backlinks.values()].reduce((a, m) => a + m.size, 0)} backlinks, ${unusualMarked} unusual words, ${cardOk} card_ok entries, in ${Math.round(performance.now() - t0)} ms`);
 console.log(`  ${dbPath}`);

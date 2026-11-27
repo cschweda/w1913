@@ -1,7 +1,7 @@
 ![w1913.com: W for Webster's, 1913 for the Revised Unabridged edition. A dictionary for writers.](assets/og-image.png)
 
 [![Live: w1913.com](https://img.shields.io/badge/live-w1913.com-c8102e.svg)](https://w1913.com)
-[![Version 0.6.2](https://img.shields.io/badge/version-0.6.2-111111.svg)](CHANGELOG.md)
+[![Version 0.7.0](https://img.shields.io/badge/version-0.7.0-111111.svg)](CHANGELOG.md)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-111111.svg)](LICENSE)
 [![Data: CC0 1.0](https://img.shields.io/badge/data-CC0%201.0-111111.svg)](LICENSE-DATA)
 [![Node 24](https://img.shields.io/badge/node-24-111111.svg)](.nvmrc)
@@ -15,7 +15,7 @@ The 1913 Webster's is loved for its discursive definitions, its literary quotati
 
 **Live at [w1913.com](https://w1913.com).** Type any word after the address: [w1913.com/sublime](https://w1913.com/sublime).
 
-![The W1913 home page: the heading "Look up any word in the 1913 Webster's", a large empty field with a red Look up button, a one-line instruction, and a three-step guide: type a word, use the address bar, press / anywhere.](docs/images/home.jpg)
+![The W1913 home page: the heading "Look up any word in the 1913 Webster's Dictionary", a large empty field with a red Look up button, a one-line instruction, and a three-step guide: type a word, use the address bar, press / anywhere.](docs/images/home.jpg)
 
 ## What it does today
 
@@ -29,6 +29,7 @@ The 1913 Webster's is loved for its discursive definitions, its literary quotati
 - **Words that point here**: the entries that say "See *X*", "Cf. *X*", or "Same as *X*".
 - **Synonyms**: each entry's synonym list with every word linked; the dictionary's **624 essays** on how near-synonyms differ, shown on every word they compare and collected at [/synonyms](https://w1913.com/synonyms); "Listed as a synonym under" for each word; and a side-by-side **compare** page ([abandon, desert, forsake](https://w1913.com/synonyms/compare?w=abandon,desert,forsake)).
 - **One-step lookup**: a large search field on every page, with suggestions as you type, `/` or Ctrl-K from anywhere, "did you mean" for a word not in the dictionary, and W1913 as a browser search engine.
+- **Cards** ([/cards](https://w1913.com/cards)): a word at a time, from a random deck of 20 or from the words you visited; flip for its senses and similar words, or show the definition first and guess the word. Space flips, arrows move.
 - **Neighbors and a trail**: the entries around this one, as on the printed page, and the words you visited in this tab.
 - **Look up by selection**: select a word in an entry to jump to it.
 - **Dark and light themes**, fast on a phone (Lighthouse 100 for performance, accessibility, best practices, and SEO), and no WCAG 2.2 AA violations on any page type.
@@ -51,7 +52,7 @@ Each phase adds one layer to the edition and the features that rest on it (DESIG
 | What's the word for…? | Search inside definitions; browsing by label (obsolete, poetic, nautical) | 3 |
 | I need a word with this rhythm. | Filters by syllable count and stress; a period check for a passage | 4 |
 | How did the masters use it? | Quotations, searchable and browsable by author | 5 |
-| Teach me a word. | Cards: decks at random, by label, by search, or from your own lists | 2 (next) – 6 |
+| Teach me a word. | More card decks: by label and by search (Phase 3), by author (5), from saved words, with "Knew it" / "New to me" (6) | 3–6 |
 | Can my own tools use it? | The edition as downloads and static files for Drafter and the Markdown editor, offline (no API) | 7 |
 
 ## How it is built
@@ -103,7 +104,7 @@ cd ~/w1913.com          # the checkout
 ./rebuild.sh --rollback # back to the previous release
 ```
 
-Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.6.2 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
+Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.7.0 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
 
 ## Licence
 

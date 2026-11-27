@@ -182,6 +182,8 @@ export const config = {
     unusualPerSense: 2,
     /** Milliseconds to wait before showing a preview on pointer hover. */
     previewDelayMs: 250,
+    /** Cards in a deck (DESIGN.md says 20). The trail deck holds at most this many too. */
+    deckSize: 20,
   },
 
   // ---------------------------------------------------------------------------

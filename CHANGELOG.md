@@ -17,6 +17,25 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-27
+
+### Added
+
+- **Cards** at `/cards` (DESIGN.md §4, Phase 2): one word at a time from a deck of 20. Decks:
+  **Random** (drawn from the 79,594 `card_ok` entries: a real definition of 40+ characters, not
+  only a cross-reference) and **Trail** (the words visited in this tab). **Show first**: the word,
+  or the definition (reverse mode: "What's the word?"). The back shows the marked headword, part of
+  speech, up to three senses, similar words (the entry's synonyms, linked), and a link to the full
+  entry. Space or Enter flips and the arrow keys move, never while focus is in a field or on a
+  control; every key has a button. The flip is a disclosure (`aria-expanded`), the hidden face is
+  not rendered, and the revealed face is announced; no 3D, no motion. A note says cards are drawn
+  from a 1913 dictionary and shown as printed. "Cards" in the header; `features.deckSize` in
+  `w1913.config.ts`.
+
+### Changed
+
+- The home heading reads "Look up any word in the 1913 Webster's Dictionary".
+
 ## [0.6.2] - 2026-11-27
 
 ### Fixed
@@ -216,7 +235,8 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/cschweda/w1913/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/cschweda/w1913/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/cschweda/w1913/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/cschweda/w1913/compare/v0.5.0...v0.6.0

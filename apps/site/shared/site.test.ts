@@ -212,3 +212,23 @@ describe("home page examples", () => {
     expect(config.site.examples.filter((w) => !slugs.has(slugify(w)))).toEqual([]);
   });
 });
+
+import { cardSenses, isCardOk } from "./cards.ts";
+
+describe("cards", () => {
+  it("a real definition of 40+ characters makes an entry card_ok", () => {
+    expect(isCardOk(["A military engine formerly used for throwing stones and javelins."])).toBe(true);
+  });
+  it("a bare cross-reference does not", () => {
+    expect(isCardOk(["See Cymric, a. & n."])).toBe(false);
+    expect(isCardOk(["Same as Hypostasis, 2. [Obs.] and a little more text here"])).toBe(false);
+  });
+  it("labels do not count toward the 40 characters", () => {
+    expect(isCardOk(["(Zoöl.) [Obs.] A small fish."])).toBe(false);
+  });
+  it("puts real definitions first, at most three, trimmed to a word", () => {
+    const s = cardSenses(["See Other.", "First real sense.", "Second.", "Third.", "Fourth."]);
+    expect(s).toEqual(["First real sense.", "Second.", "Third."]);
+    expect(cardSenses(["word ".repeat(80)])[0]!.endsWith("…")).toBe(true);
+  });
+});

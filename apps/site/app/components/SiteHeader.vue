@@ -9,6 +9,7 @@
       <span class="word">w1913<span class="vh">, home</span></span>
     </NuxtLink>
     <nav aria-label="Sections" class="sections">
+      <NuxtLink to="/cards" class="t" active-class="on">Cards</NuxtLink>
       <NuxtLink to="/synonyms" class="t" active-class="on">Synonyms</NuxtLink>
       <NuxtLink to="/about" class="t" active-class="on">About</NuxtLink>
     </nav>
