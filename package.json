@@ -9,6 +9,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "dev": "bash scripts/dev.sh",
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "pnpm -r run typecheck"

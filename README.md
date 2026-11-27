@@ -45,7 +45,15 @@ Every published word comes from #29765, which Project Gutenberg catalogues as pu
 
 ## Development
 
-Requires Node 24 (`nvm use`) and pnpm. Setup instructions arrive with the Phase 0 scaffold.
+Requires Node 24 (`nvm use`) and pnpm 12 (`corepack enable`).
+
+```bash
+pnpm install
+pnpm test                                   # unit and golden tests
+pnpm dev                                    # clean caches, rebuild the edition, start Nuxt on :3913 (from Phase 1)
+pnpm --filter @w1913/data run phase0        # source audit → cache/phase0/report.json
+pnpm --filter @w1913/data run edition       # build the pinned edition release
+```
 
 The canonical source is not committed. The download step fetches it, or uses a copy placed by hand at `cache/sources/29765.txt`, and verifies its SHA-256 either way.
 

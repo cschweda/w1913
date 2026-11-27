@@ -176,6 +176,11 @@ keep them working:
 - At runtime the site reads W1913_DB_PATH, HOST, and PORT, opens the
   database read-only, and serves GET /healthz: 200 once the database is
   open, 503 otherwise. `/` and `/sublime` must answer 200.
+- Local development runs through `pnpm dev` (scripts/dev.sh): it clears
+  build caches, rebuilds the edition, runs db:import into
+  cache/db/w1913.sqlite, and starts `nuxt dev` on port 3913. Keep the site
+  working with that script; never make it touch cache/sources/ or
+  cache/tagged/.
 - pnpm-lock.yaml is committed, written by pnpm 12.16.1 (the version in
   "packageManager" and on the droplet). The deploy uses --frozen-lockfile,
   which fails on a lockfile from another major version.
