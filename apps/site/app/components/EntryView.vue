@@ -60,6 +60,7 @@ useHead({ link: [{ rel: "canonical", href: url }] });
     <TrailNav :current="page.slug" :headword="page.headword" />
     <div class="cols">
       <article class="entry" data-lookup>
+        <SearchBox size="bar" class="lookup" />
         <h1 class="hw">{{ page.headword }}</h1>
         <div aria-hidden="true" class="bar" />
         <p v-if="page.entries.length > 1" class="m count">{{ page.entries.length }} entries</p>
@@ -80,6 +81,7 @@ useHead({ link: [{ rel: "canonical", href: url }] });
 </template>
 
 <style scoped>
+.lookup { margin: 0 0 40px; }
 .cols { display: flex; flex-wrap: wrap; gap: 48px; margin-top: 28px; }
 .entry { flex: 999 1 560px; min-width: 0; max-width: 860px; }
 .side { flex: 0 1 220px; }

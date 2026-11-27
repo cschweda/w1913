@@ -37,7 +37,7 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
-        { rel: "preload", as: "font", href: "/fonts/InterVariable-4.1.woff2", type: "font/woff2", crossorigin: "" },
+        { rel: "preload", as: "font", href: "/fonts/InterVariable-4.1-latin.woff2", type: "font/woff2", crossorigin: "" },
         { rel: "search", type: "application/opensearchdescription+xml", href: "/opensearch.xml", title: config.site.name },
       ],
       style: [{ key: "w1913-tokens", innerHTML: themeCss }],

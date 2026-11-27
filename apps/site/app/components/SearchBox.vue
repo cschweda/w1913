@@ -6,6 +6,10 @@ import { entryPath } from "../../shared/fold";
 
 interface Item { label: string; slug: string }
 
+// "hero" fills the home page; "bar" heads the main column of every other page.
+const props = withDefaults(defineProps<{ size?: "hero" | "bar"; autofocus?: boolean }>(), { size: "bar", autofocus: false });
+const selected = ref<Item | undefined>(undefined);
+
 const term = ref("");
 const items = ref<Item[]>([]);
 const loading = ref(false);
@@ -31,6 +35,7 @@ async function fetchSuggestions(q: string) {
 
 async function go(item: Item | undefined) {
   if (!item) return;
+  selected.value = undefined;
   term.value = "";
   items.value = [];
   await navigateTo(entryPath(item.slug));
@@ -49,25 +54,34 @@ function focusInput() {
   el?.focus();
 }
 defineShortcuts({ "/": focusInput, meta_k: focusInput });
+onMounted(() => {
+  if (props.autofocus && window.matchMedia("(pointer: fine)").matches) focusInput();
+});
+
+// Sizes are set in the scoped CSS below (Nuxt UI's own size classes would
+// otherwise win); these only clear its default chrome.
+const inputClass = "px-0 rounded-none border-b-2 border-[var(--fg)] text-[var(--fg)] placeholder:text-[var(--mu)]";
+const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl py-2" : "rounded-none text-lg"));
 </script>
 
 <template>
-  <form role="search" class="box" @submit.prevent="freeText(term)">
-    <label for="lookup" class="cap">Look up</label>
+  <form role="search" :class="['box', size === 'hero' ? 'is-hero' : 'is-bar']" @submit.prevent="freeText(term)">
+    <label for="lookup" class="cap lbl">Look up a word</label>
     <UInputMenu
       id="lookup"
+      v-model="selected"
       v-model:search-term="term"
       :items="items"
       :loading="loading"
       ignore-filter
       :create-item="items.length ? false : { position: 'bottom', when: 'always' }"
       variant="none"
-      placeholder="a word"
+      :placeholder="size === 'hero' ? 'sublime' : 'another word'"
       class="field"
-      :ui="{ base: 'h-11 px-0 text-base text-[var(--fg)] placeholder:text-[var(--mu)] border-b border-[var(--fg)] rounded-none', content: 'rounded-none border border-[var(--fg)] bg-[var(--bg)]', item: 'rounded-none' }"
+      :ui="{ root: 'w-full', base: inputClass, content: 'rounded-none border border-[var(--fg)] bg-[var(--bg)]', item: itemClass }"
       :reset-search-term-on-blur="false"
       :trailing="false"
-      aria-label="Look up a word"
+      autocomplete="off"
       @update:model-value="(v: Item | undefined) => go(v)"
       @create="freeText"
     >
@@ -75,12 +89,19 @@ defineShortcuts({ "/": focusInput, meta_k: focusInput });
         <span class="cap">Type a word</span>
       </template>
     </UInputMenu>
-    <span class="hint" aria-hidden="true">/ or Ctrl K</span>
+    <p v-if="size === 'bar'" class="hint" aria-hidden="true">Press <kbd>/</kbd> or <kbd>Ctrl K</kbd> to look up from anywhere</p>
   </form>
 </template>
 
 <style scoped>
-.box { display: flex; align-items: center; gap: 12px; margin: 0; }
-.field { flex: 1; min-width: 0; }
-.hint { font-size: 12px; color: var(--mu); white-space: nowrap; }
+.box { margin: 0; }
+.lbl { display: block; margin-bottom: 4px; }
+.field { display: flex; width: 100%; }
+.box :deep(input) { width: 100%; }
+.is-bar { max-width: 860px; }
+.is-hero :deep(input) { height: auto; padding-top: 4px; padding-bottom: 8px; font-size: clamp(40px, 8vw, 104px); font-weight: 700; letter-spacing: -.045em; line-height: 1.05; }
+.is-bar :deep(input) { height: 56px; font-size: clamp(22px, 3vw, 30px); font-weight: 700; letter-spacing: -.02em; }
+.box :deep(input::placeholder) { font-weight: 400; color: var(--mu); opacity: 1; }
+.hint { margin: 8px 0 0; font-size: 13px; color: var(--mu); }
+kbd { font: inherit; font-weight: 700; color: var(--fg); padding: 0 6px; border: 1px solid var(--mu); }
 </style>

@@ -12,6 +12,7 @@ useSeoMeta({ robots: "noindex" });
 
 <template>
   <NuxtLayout>
+    <SearchBox size="bar" class="lookup" />
     <div class="err">
       <h1 class="title">{{ notFound ? "Not in this dictionary" : "Something went wrong" }}</h1>
       <div aria-hidden="true" class="bar" />
@@ -28,7 +29,8 @@ useSeoMeta({ robots: "noindex" });
 </template>
 
 <style scoped>
-.err { max-width: 860px; margin-top: 28px; }
+.lookup { margin: 8px 0 28px; }
+.err { max-width: 860px; }
 .title { margin: 0; font-size: clamp(48px, 8vw, 112px); line-height: .95; font-weight: 700; letter-spacing: -.04em; }
 .bar { width: 96px; height: 8px; background: var(--ac); margin: 28px 0 20px; }
 .lede { font-size: 22px; margin: 0; }

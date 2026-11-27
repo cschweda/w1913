@@ -5,6 +5,9 @@ import { posAnchor, posTitle } from "./pos.ts";
 import { bodyHtml, blockHtml, escapeHtml, prose, type Locate } from "./render.ts";
 import { addToTrail } from "./trail.ts";
 import config from "../../../w1913.config.ts";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { inRange, LATIN_RANGE } from "./font-range.ts";
 
 describe("folding matches the edition's rules", () => {
   it.each(["Æ\"gis", "Zo`ö*chem\"ic*al", "Jack\"-o'-lan`tern", "Zuñian", "A per se", "X\"-rays`"])("%j", (w) => {
@@ -74,5 +77,24 @@ describe("trail", () => {
     for (let i = 0; i < 30; i++) t = addToTrail(t, { slug: `w${i}`, headword: `W${i}` });
     expect(t).toHaveLength(config.features.trailMax);
     expect(t.at(-1)!.slug).toBe("w29");
+  });
+});
+
+describe("font coverage", () => {
+  it("the CSS declares the same range the font was cut to", () => {
+    const css = readFileSync(path.join(import.meta.dirname, "../app/assets/css/main.css"), "utf8");
+    expect(css).toContain(`unicode-range: ${LATIN_RANGE.split(",").join(", ")};`);
+  });
+  it("the typography the renderer adds is covered", () => {
+    for (const ch of "—″′·“”’…–") expect(inRange(LATIN_RANGE, ch.codePointAt(0)!)).toBe(true);
+  });
+  const edition = path.join(import.meta.dirname, "../../..", config.paths.editions, `w1913-${config.edition.version}`, `w1913-${config.edition.version}.jsonl`);
+  it.skipIf(!existsSync(edition))("every character in the pinned edition is in the font", () => {
+    const missing = new Set<string>();
+    for (const ch of readFileSync(edition, "utf8")) {
+      const cp = ch.codePointAt(0)!;
+      if (cp > 0x7e && !inRange(LATIN_RANGE, cp)) missing.add(ch);
+    }
+    expect([...missing]).toEqual([]);
   });
 });

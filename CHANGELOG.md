@@ -14,6 +14,7 @@ Design history (Drafts 2–5.4) is kept in DESIGN.md §9.
 
 ### Added
 
+- The search is front and centre: a full-page search on the home page with a three-step guide to the ways in, and a large search field at the top of the entry column on every page (no longer in the header).
 - **Phase 1** (`apps/site`, Nuxt 4 + Nuxt UI v4): entry pages at root URLs (`w1913.com/sublime`; route words under `/w/`), all homographs on one page, numbered senses with sub-senses, notes, inflections, spellings and etymology, linked cross-references, neighbors, the trail, the on-this-page list, look up by selection (exact matches), autocomplete with `/` and Cmd/Ctrl-K, "did you mean" on a miss, browser search-engine registration, dark and light themes, self-hosted Inter. WCAG 2.2 AA: no axe violations on any page type.
   - `db:import`: renders every entry to semantic HTML once and writes the read-only SQLite database (96 MB, about 1 s).
   - `/healthz` for the deploy's health checks.
@@ -23,6 +24,7 @@ Design history (Drafts 2–5.4) is kept in DESIGN.md §9.
 
 ### Fixed
 
+- Inter cut to the Latin range the dictionary uses: 352 KB → 106 KB (italic 388 KB → 116 KB), with a test that every character in the edition is covered.
 - No layout shift when the font loads (`font-display: optional` plus a size-matched fallback); fonts cached for a year under versioned names, other public files for a day. Lighthouse performance 91 → 100.
 - Header parsing: the part of speech is no longer found inside an etymology ("Been. Etym: [... p. p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
