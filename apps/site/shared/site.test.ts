@@ -147,4 +147,9 @@ describe("versioning", () => {
     expect(version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(readFileSync(path.join(root, "CHANGELOG.md"), "utf8")).toContain(`## [${version}] - `);
   });
+  it("the README's version badge matches package.json", () => {
+    const root = path.join(import.meta.dirname, "../../..");
+    const { version } = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")) as { version: string };
+    expect(readFileSync(path.join(root, "README.md"), "utf8")).toContain(`badge/version-${version}-`);
+  });
 });

@@ -50,8 +50,10 @@ export const config = {
     title: "W1913: Webster's 1913, for writers",
     /** Meta description of the home page (search results, link previews). Keep it under ~155 characters. */
     description: "Webster's Revised Unabridged Dictionary (1913), read the way a writer reads it.",
-    /** The source repository, linked from the About page. */
+    /** The source repository, linked from the footer and the About page. */
     repo: "https://github.com/cschweda/w1913",
+    /** The maker's workshop of apps, linked from the footer. */
+    workshop: { name: "Metaincognita Workshop", url: "https://metaincognita.com" },
     /** Words offered as examples on the home page. Any headwords will do. */
     examples: ["sublime", "saunter", "petrichor", "susurrus", "gossamer", "lambent"],
   },
