@@ -25,7 +25,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-PORT="${W1913_DEV_PORT:-3913}"
+PORT="${W1913_DEV_PORT:-}"
 CLEAN_ONLY=0
 for a in "$@"; do
   case "$a" in
@@ -40,6 +40,10 @@ export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 if [ -s "$NVM_DIR/nvm.sh" ]; then
   set +u; . "$NVM_DIR/nvm.sh" > /dev/null 2>&1; nvm use > /dev/null 2>&1 || true; set -u
 fi
+
+# Settings from w1913.config.ts (W1913_DEV_PORT still overrides).
+PORT="${PORT:-$(node scripts/config-get.ts server.devPort)}"
+DB_REL="$(node scripts/config-get.ts paths.devDatabase)"
 
 echo "Cleaning build caches..."
 for p in apps/site/.nuxt apps/site/.output apps/site/.data \
@@ -59,7 +63,7 @@ if [ ! -f apps/site/package.json ]; then
   exit 0
 fi
 
-export W1913_DB_PATH="$ROOT/cache/db/w1913.sqlite"
+export W1913_DB_PATH="$ROOT/$DB_REL"
 mkdir -p "$(dirname "$W1913_DB_PATH")"
 echo "Importing the database to $W1913_DB_PATH..."
 pnpm --filter @w1913/site run db:import

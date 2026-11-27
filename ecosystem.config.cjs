@@ -26,7 +26,9 @@ const current = path.join(root, "current");
 module.exports = {
   apps: [
     {
-      name: "w1913",
+      // The PM2 name and the values below come from w1913.config.ts, passed in
+      // by rebuild.sh as W1913_* environment variables; change them there.
+      name: process.env.W1913_PM2_NAME || "w1913",
       cwd: current,
       script: path.join(current, "apps/site/.output/server/index.mjs"),
 

@@ -38,16 +38,16 @@
 # Until apps/site exists (Phase 0), the script stops after the preflight and
 # the pull and says there is nothing to serve yet.
 #
-# Settings (environment variables, all optional):
-#   W1913_DEPLOY_ROOT   releases + current symlink   (default ~/w1913-deploy)
-#   W1913_PORT          live port nginx proxies to   (default 3913)
-#   W1913_CANARY_PORT   port for the pre-switch test (default 3914)
-#   W1913_SMOKE_PATHS   paths the canary and live checks must answer 200
-#                       (default "/ /sublime")
-#   W1913_KEEP          releases to keep             (default 5)
+# Settings come from w1913.config.ts (server, deploy). Environment
+# variables override them for a one-off run:
+#   W1913_DEPLOY_ROOT   releases + current symlink   (deploy.root)
+#   W1913_PORT          live port nginx proxies to   (server.port)
+#   W1913_CANARY_PORT   port for the pre-switch test (server.canaryPort)
+#   W1913_SMOKE_PATHS   paths that must answer 200   (deploy.smokePaths)
+#   W1913_KEEP          releases to keep             (deploy.keepReleases)
+#   W1913_LOG_DIR       deploy logs                  (deploy.logDir)
 #   W1913_NGINX_CACHE   nginx proxy_cache directory to empty after a deploy
 #   W1913_PUBLIC_URL    e.g. https://w1913.com: one public check at the end
-#   W1913_LOG_DIR       deploy logs                  (default ~/deploy-logs/w1913)
 # =====================================================================
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -83,19 +83,24 @@ fi
 
 set -Eeuo pipefail
 
-DEPLOY_ROOT="${W1913_DEPLOY_ROOT:-$HOME/w1913-deploy}"
-PORT="${W1913_PORT:-3913}"
-CANARY_PORT="${W1913_CANARY_PORT:-3914}"
-SMOKE_PATHS="${W1913_SMOKE_PATHS:-/ /sublime}"
-KEEP="${W1913_KEEP:-5}"
+# One value from w1913.config.ts, or the fallback if Node or the file is
+# unavailable (the preflight then reports what is missing).
+cfg() { node "$REPO_DIR/scripts/config-get.ts" "$1" 2> /dev/null || echo "$2"; }
+
+DEPLOY_ROOT="${W1913_DEPLOY_ROOT:-$(cfg deploy.root "$HOME/w1913-deploy")}"
+PORT="${W1913_PORT:-$(cfg server.port 3913)}"
+CANARY_PORT="${W1913_CANARY_PORT:-$(cfg server.canaryPort 3914)}"
+SMOKE_PATHS="${W1913_SMOKE_PATHS:-$(cfg deploy.smokePaths "/ /sublime")}"
+KEEP="${W1913_KEEP:-$(cfg deploy.keepReleases 5)}"
+MAX_MEMORY="${W1913_MAX_MEMORY:-$(cfg deploy.maxMemory 450M)}"
 NGINX_CACHE="${W1913_NGINX_CACHE:-}"
 PUBLIC_URL="${W1913_PUBLIC_URL:-}"
-LOG_DIR="${W1913_LOG_DIR:-$HOME/deploy-logs/w1913}"
+LOG_DIR="${W1913_LOG_DIR:-$(cfg deploy.logDir "$HOME/deploy-logs/w1913")}"
 STATE_DIR="$DEPLOY_ROOT/state"
-APP_NAME="w1913"
+APP_NAME="$(cfg deploy.pm2Name w1913)"
 WANT_NODE="$(tr -dc '0-9' < "$REPO_DIR/.nvmrc" 2>/dev/null || true)"
 WANT_NODE="${WANT_NODE:-24}"
-export W1913_DEPLOY_ROOT="$DEPLOY_ROOT" W1913_PORT="$PORT"
+export W1913_DEPLOY_ROOT="$DEPLOY_ROOT" W1913_PORT="$PORT" W1913_MAX_MEMORY="$MAX_MEMORY" W1913_PM2_NAME="$APP_NAME"
 
 # ---------------------------------------------------------------------
 # Deploy log. Started once; the re-exec after a pull inherits the tee.
@@ -203,7 +208,9 @@ _switch_to() {  # $1 = release directory; atomic symlink swap
 
 _pm2_apply() {  # (re)start PM2 from the live release's ecosystem file
   local eco="$DEPLOY_ROOT/current/ecosystem.config.cjs" hash_file="$STATE_DIR/ecosystem.sha256" new_hash old_hash
-  new_hash="$(sha256sum "$eco" | cut -d' ' -f1)"
+  # The settings PM2 takes at registration come from the file AND from the
+  # values passed in from w1913.config.ts; a change to either re-registers.
+  new_hash="$( { cat "$eco"; echo "$PORT $MAX_MEMORY $DEPLOY_ROOT $APP_NAME"; } | sha256sum | cut -d' ' -f1)"
   old_hash="$(cat "$hash_file" 2> /dev/null || true)"
   if ! pm2 describe "$APP_NAME" > /dev/null 2>&1; then
     echo "Registering $APP_NAME with PM2 (first start)..."
@@ -310,9 +317,10 @@ if [ -z "${REBUILD_REEXECED:-}" ]; then
     echo "Pulled ${_before:0:12} -> ${_after:0:12}."
     # bash reads a script by byte offset as it runs; if the pull rewrote this
     # file, the rest of this run would execute a mix of old and new. Re-run
-    # the fresh copy once.
-    if ! git diff --quiet "$_before" "$_after" -- rebuild.sh; then
-      echo "rebuild.sh itself changed; re-running the new version..."
+    # the fresh copy once. The same when w1913.config.ts changed, so the new
+    # settings apply to this deploy.
+    if ! git diff --quiet "$_before" "$_after" -- rebuild.sh w1913.config.ts; then
+      echo "rebuild.sh or w1913.config.ts changed; re-running with the new version..."
       export REBUILD_REEXECED=1
       exec bash "$_self" "$@"
     fi
