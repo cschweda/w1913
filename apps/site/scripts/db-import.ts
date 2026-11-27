@@ -82,10 +82,31 @@ db.exec(`
   );
   CREATE TABLE pages (slug TEXT PRIMARY KEY, headword TEXT NOT NULL, first_ord INTEGER NOT NULL, rank INTEGER NOT NULL, entries INTEGER NOT NULL);
   CREATE TABLE forms (fold TEXT NOT NULL, form TEXT NOT NULL, slug TEXT NOT NULL, kind TEXT NOT NULL, ord INTEGER NOT NULL);
+  CREATE TABLE backlinks (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
 `);
 const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text)`);
 const insPage = db.prepare(`INSERT INTO pages VALUES (?,?,?,?,?)`);
 const insForm = db.prepare(`INSERT INTO forms VALUES (?,?,?,?,?)`);
+const insBack = db.prepare(`INSERT INTO backlinks VALUES (?,?,?,?)`);
+
+// Words that point here (reverse cross-references): one row per pair of
+// pages, from the page whose entry links to the page it links to.
+const backlinks = new Map<string, Map<string, { headword: string; ord: number }>>();
+for (const e of entries) {
+  const from = slugOf(e);
+  const blocks = [e.etymology, ...e.notes, ...e.senses.flatMap((s) => [s, ...s.sub, ...s.notes])].filter((b) => b !== null);
+  for (const b of blocks) {
+    for (const x of b.xrefs) {
+      const target = x.id ? byId.get(x.id) : undefined;
+      if (!target) continue;
+      const to = slugOf(target);
+      if (to === from) continue;
+      let m = backlinks.get(to);
+      if (!m) backlinks.set(to, (m = new Map()));
+      if (!m.has(from)) m.set(from, { headword: pages.get(from)![0]!.headword, ord: pages.get(from)![0]!.ord });
+    }
+  }
+}
 
 db.transaction(() => {
   for (const e of entries) {
@@ -110,6 +131,7 @@ db.transaction(() => {
     .map(([slug, list]) => ({ slug, headword: list[0]!.headword, first: list[0]!.ord, n: list.length }))
     .sort((a, b) => a.first - b.first)
     .forEach((p, rank) => insPage.run(p.slug, p.headword, p.first, rank, p.n));
+  for (const [to, froms] of backlinks) for (const [from, v] of froms) insBack.run(to, from, v.headword, v.ord);
   const ins = db.prepare("INSERT INTO meta VALUES (?, ?)");
   ins.run("edition", manifest.version);
   ins.run("layers", manifest.layers.join(","));
@@ -121,11 +143,12 @@ db.exec(`
   CREATE INDEX entries_slug ON entries (slug, ord);
   CREATE INDEX pages_rank ON pages (rank);
   CREATE INDEX forms_fold ON forms (fold, ord);
+  CREATE INDEX backlinks_slug ON backlinks (slug, from_ord);
   ANALYZE;
 `);
 db.close();
 renameSync(tmp, dbPath);
 // A slug that folds two different spellings together would make a page show
 // entries that do not match its headword; report it rather than hide it.
-console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, in ${Math.round(performance.now() - t0)} ms`);
+console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, ${[...backlinks.values()].reduce((a, m) => a + m.size, 0)} backlinks, in ${Math.round(performance.now() - t0)} ms`);
 console.log(`  ${dbPath}`);

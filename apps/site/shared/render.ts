@@ -1,6 +1,8 @@
 // Entry rendering: edition entry (senses layer) -> semantic HTML, done once
 // at import (DESIGN.md §3). Text is escaped; the only markup is ours.
-// Phase 1 shows quotations and labels as printed, inside the sense text.
+// Phase 1 shows quotations and labels as printed, inside the sense text;
+// known abbreviations are decoded with <abbr> (shared/abbreviations.ts).
+import { abbreviate } from "./abbreviations.ts";
 
 
 export interface Xref { start: number; end: number; to: string; id: string | null; sense: number | null }
@@ -33,8 +35,15 @@ export function prose(s: string): string {
   return escapeHtml(s.replace(/\n/g, " ")).replace(/--/g, "—");
 }
 
-/** A block's text as HTML paragraphs, with its cross-references linked. */
-export function blockHtml(b: Block, locate: Locate, tag = "p", cls = ""): string {
+type Context = "etymology" | "inflections" | "text";
+
+/** prose() plus decoded abbreviations for the given context. */
+export function richProse(s: string, context: Context): string {
+  return abbreviate(prose(s), context);
+}
+
+/** A block's text as HTML paragraphs, with its cross-references linked and abbreviations decoded. */
+export function blockHtml(b: Block, locate: Locate, tag = "p", cls = "", context: Context = "text"): string {
   const paras = b.text.split(/\n\n/);
   let offset = 0;
   const out: string[] = [];
@@ -48,12 +57,12 @@ export function blockHtml(b: Block, locate: Locate, tag = "p", cls = ""): string
     for (const x of links) {
       const where = locate(x.id!);
       if (!where) continue;
-      html += prose(b.text.slice(at, x.start));
+      html += richProse(b.text.slice(at, x.start), context);
       const hash = x.sense ? `${where.anchor}-${x.sense}` : where.anchor;
       html += `<a href="${where.path}#${hash}" class="x">${escapeHtml(b.text.slice(x.start, x.end))}</a>`;
       at = x.end;
     }
-    html += prose(b.text.slice(at, end));
+    html += richProse(b.text.slice(at, end), context);
     out.push(`<${tag}${cls ? ` class="${cls}"` : ""}>${html}</${tag}>`);
   }
   return out.join("");
@@ -63,10 +72,10 @@ export function blockHtml(b: Block, locate: Locate, tag = "p", cls = ""): string
 export function metaHtml(e: RenderableEntry, locate: Locate): string {
   const lines: string[] = [];
   const first = [...e.headerLabels, ...e.headerMarks, e.headerRest ?? ""].filter(Boolean).join(" ");
-  if (first) lines.push(`<p class="m">${prose(first)}</p>`);
-  if (e.inflections) lines.push(`<p class="m">${prose(e.inflections)}</p>`);
+  if (first) lines.push(`<p class="m">${richProse(first, "text")}</p>`);
+  if (e.inflections) lines.push(`<p class="m">${richProse(e.inflections, "inflections")}</p>`);
   for (const s of e.spellings) lines.push(`<p class="m">${prose(s)}</p>`);
-  if (e.etymology) lines.push(blockHtml(e.etymology, locate, "p", "m ety"));
+  if (e.etymology) lines.push(blockHtml(e.etymology, locate, "p", "m ety", "etymology"));
   return lines.join("");
 }
 

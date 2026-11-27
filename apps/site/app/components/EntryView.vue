@@ -4,12 +4,18 @@
 // moved to the left on wide screens with CSS only.
 import config from "../../../../w1913.config";
 import { entryPath, RESERVED, slugify } from "../../shared/fold";
+import { abbreviationsIn } from "../../shared/abbreviations";
+import { prosodyOf } from "../../shared/prosody";
 
 interface Entry {
   id: string; anchor: string; headword: string; headword_marked: string | null; pos: string | null;
   pos_title: string | null; sense_count: number; meta_html: string; body_html: string;
 }
-interface Page { slug: string; headword: string; entries: Entry[]; neighbors: { slug: string; headword: string; current: boolean }[] }
+interface Page {
+  slug: string; headword: string; entries: Entry[];
+  neighbors: { slug: string; headword: string; current: boolean }[];
+  backlinks: { slug: string; headword: string }[];
+}
 
 const props = defineProps<{ slug: string; reservedRoute: boolean }>();
 
@@ -41,6 +47,21 @@ const sections = computed(() =>
     label: [e.pos ?? "entry", e.sense_count > 1 ? `${e.sense_count} senses` : ""].filter(Boolean).join(" · "),
   })),
 );
+const prosody = computed(() => Object.fromEntries(page.entries.map((e) => [e.id, prosodyOf(e.headword_marked)])));
+
+// The key: every abbreviation decoded on this page, parts of speech included.
+const abbreviations = computed(() => {
+  const html = page.entries
+    .map((e) => `${e.pos && e.pos_title ? `<abbr title="${e.pos_title}">${e.pos}</abbr>` : ""}${e.meta_html}${e.body_html}`)
+    .join("");
+  return abbreviationsIn(html);
+});
+
+// Many pages are pointed to by hundreds of entries; show the first ones.
+const BACKLINKS_SHOWN = 60;
+const showAllBacklinks = ref(false);
+const backlinksShown = computed(() => (showAllBacklinks.value ? page.backlinks : page.backlinks.slice(0, BACKLINKS_SHOWN)));
+
 const firstText = computed(() =>
   (page.entries[0]?.body_html ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 155),
 );
@@ -70,9 +91,33 @@ useHead({ link: [{ rel: "canonical", href: url }] });
             <span class="vh">{{ e.headword }}</span>
             <abbr v-if="e.pos" :title="e.pos_title ?? undefined">{{ e.pos }}</abbr>
           </h2>
+          <p v-if="prosody[e.id]" class="pros">
+            <span aria-hidden="true" class="syls">
+              <template v-for="(s, i) in prosody[e.id]!.syllables" :key="i"><span v-if="i" class="dot">·</span><span :class="['syl', `s${s.stress}`]">{{ s.text }}</span></template>
+            </span>
+            <span class="pros-text">{{ prosody[e.id]!.summary }}</span>
+          </p>
           <!-- Rendered at import from the edition (shared/render.ts); all text escaped there. -->
           <div v-html="e.meta_html" />
           <div v-html="e.body_html" />
+        </section>
+
+        <section v-if="page.backlinks.length" class="sec more" aria-labelledby="back-h">
+          <h2 id="back-h" class="hh small">Words that point here <span class="n">{{ page.backlinks.length }}</span></h2>
+          <p class="m">Entries that say “See {{ page.headword }}”, “Cf. {{ page.headword }}”, or “Same as {{ page.headword }}”.</p>
+          <ul class="back">
+            <li v-for="b in backlinksShown" :key="b.slug"><NuxtLink :to="entryPath(b.slug)" class="x">{{ b.headword }}</NuxtLink></li>
+          </ul>
+          <button v-if="page.backlinks.length > BACKLINKS_SHOWN && !showAllBacklinks" type="button" class="btn btn-quiet all" @click="showAllBacklinks = true">
+            Show all {{ page.backlinks.length }}
+          </button>
+        </section>
+
+        <section v-if="abbreviations.length" class="sec more" aria-labelledby="abbr-h">
+          <h2 id="abbr-h" class="hh small">Abbreviations on this page</h2>
+          <dl class="key">
+            <div v-for="a in abbreviations" :key="a.abbr"><dt>{{ a.abbr }}</dt><dd>{{ a.meaning }}</dd></div>
+          </dl>
         </section>
       </article>
       <EntryRail class="side" :sections="sections" :neighbors="page.neighbors" />
@@ -89,4 +134,20 @@ useHead({ link: [{ rel: "canonical", href: url }] });
 .hw { margin: 0; font-size: clamp(56px, 11vw, 160px); line-height: .9; font-weight: 700; letter-spacing: -.045em; overflow-wrap: anywhere; }
 .bar { width: 96px; height: 8px; background: var(--ac); margin: 28px 0 20px; }
 .count { margin: 0; }
+.pros { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 10px 0 0; }
+.syls { font-size: 20px; letter-spacing: .01em; }
+.dot { margin: 0 6px; color: var(--mu); }
+.syl.s0 { color: var(--mu); }
+.syl.s1 { color: var(--fg); font-weight: 700; box-shadow: inset 0 -3px 0 var(--ac); }
+.syl.s2 { color: var(--fg); font-weight: 500; box-shadow: inset 0 -1px 0 var(--mu); }
+.pros-text { font-size: 14px; color: var(--mu); }
+.more { margin-top: 56px; }
+.small { font-size: 22px; }
+.n { font-size: 15px; font-weight: 400; color: var(--mu); margin-left: 8px; }
+.back { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 18px; line-height: 1.8; }
+.all { margin-top: 16px; }
+.key { margin: 16px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 24px; font-size: 15px; }
+.key div { display: flex; gap: 10px; }
+.key dt { font-weight: 700; min-width: 56px; }
+.key dd { margin: 0; color: var(--mu); }
 </style>

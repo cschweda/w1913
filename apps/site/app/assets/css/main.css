@@ -89,3 +89,7 @@ a:hover { color: var(--ac); }
 .syn .cap { margin-right: 12px; }
 :target { scroll-margin-top: 24px; }
 li:target, .sec:target > .hh { background: color-mix(in srgb, var(--ac) 12%, transparent); }
+
+/* Decoded abbreviations: a dotted underline says "hover or see the key below". */
+abbr[title] { text-decoration: underline dotted var(--mu); text-underline-offset: 3px; cursor: help; }
+.hh abbr[title] { text-decoration: none; }

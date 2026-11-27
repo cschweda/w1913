@@ -98,3 +98,44 @@ describe("font coverage", () => {
     expect([...missing]).toEqual([]);
   });
 });
+
+import { abbreviate, abbreviationsIn } from "./abbreviations.ts";
+import { prosodyOf } from "./prosody.ts";
+
+describe("abbreviations", () => {
+  it("decodes languages in an etymology", () => {
+    expect(abbreviate("OE. sotil, L. subtilis", "etymology")).toBe('<abbr title="Old English">OE.</abbr> sotil, <abbr title="Latin">L.</abbr> subtilis');
+  });
+  it("decodes labels only inside brackets or parentheses", () => {
+    expect(abbreviate("To inherit. [Obs. &amp; R.] Shak.", "text")).toBe('To inherit. [<abbr title="obsolete">Obs.</abbr> &amp; <abbr title="rare">R.</abbr>] Shak.');
+    expect(abbreviate("Stooping and submiss. R. L. Stevenson.", "text")).toBe("Stooping and submiss. R. L. Stevenson.");
+  });
+  it("does not decode inside a word", () => {
+    expect(abbreviate("Galatians", "etymology")).toBe("Galatians");
+  });
+  it("lists each abbreviation once for the key", () => {
+    expect(abbreviationsIn('<abbr title="Latin">L.</abbr> x <abbr title="Latin">L.</abbr> <abbr title="obsolete">Obs.</abbr>')).toEqual([
+      { abbr: "L.", meaning: "Latin" }, { abbr: "Obs.", meaning: "obsolete" },
+    ]);
+  });
+});
+
+describe("prosodyOf", () => {
+  it("reads syllables and primary stress", () => {
+    expect(prosodyOf('Sub*lime"')).toEqual({ syllables: [{ text: "Sub", stress: 0 }, { text: "lime", stress: 1 }], summary: "2 syllables, stress on the second" });
+  });
+  it("reads secondary stress", () => {
+    expect(prosodyOf('Ac`e*to*ne"mi*a')?.summary).toBe("6 syllables, stress on the fourth, lighter stress on the first");
+  });
+  it("splits at hyphens", () => {
+    expect(prosodyOf('Jack"-o\'-lan`tern')?.syllables.map((s) => s.text)).toEqual(["Jack", "o'", "lan", "tern"]);
+  });
+  it("uses only the first of several forms", () => {
+    expect(prosodyOf('Ab"a*tis, Ab"at*tis')?.syllables).toHaveLength(3);
+  });
+  it("claims one syllable only for an unmarked word with one vowel group", () => {
+    expect(prosodyOf("Yarn")?.summary).toBe("1 syllable");
+    expect(prosodyOf("Saunter")).toBeNull();
+    expect(prosodyOf(null)).toBeNull();
+  });
+});

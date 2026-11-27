@@ -14,6 +14,7 @@ Design history (Drafts 2–5.4) is kept in DESIGN.md §9.
 
 ### Added
 
+- On every entry: **syllables and stress** read from the printed marks (sub · **lime**, "2 syllables, stress on the second"); **decoded abbreviations** (languages in etymologies, labels in brackets, grammatical words in inflections) as `<abbr>` with an "Abbreviations on this page" key; and **Words that point here**, the 37,218 reversed cross-references.
 - The search is front and centre: a full-page search on the home page with a three-step guide to the ways in, and a large search field at the top of the entry column on every page (no longer in the header).
 - **Phase 1** (`apps/site`, Nuxt 4 + Nuxt UI v4): entry pages at root URLs (`w1913.com/sublime`; route words under `/w/`), all homographs on one page, numbered senses with sub-senses, notes, inflections, spellings and etymology, linked cross-references, neighbors, the trail, the on-this-page list, look up by selection (exact matches), autocomplete with `/` and Cmd/Ctrl-K, "did you mean" on a miss, browser search-engine registration, dark and light themes, self-hosted Inter. WCAG 2.2 AA: no axe violations on any page type.
   - `db:import`: renders every entry to semantic HTML once and writes the read-only SQLite database (96 MB, about 1 s).

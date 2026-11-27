@@ -22,11 +22,16 @@ export default defineEventHandler((event) => {
   const near = db
     .prepare("SELECT slug, headword, rank FROM pages WHERE rank BETWEEN ? AND ? ORDER BY rank")
     .all(page.rank - n, page.rank + n) as { slug: string; headword: string; rank: number }[];
+  // Words that point here: pages whose entries cross-refer to this one, in edition order.
+  const backlinks = db
+    .prepare("SELECT from_slug AS slug, from_headword AS headword FROM backlinks WHERE slug = ? ORDER BY from_ord")
+    .all(slug) as { slug: string; headword: string }[];
   setHeader(event, "cache-control", `public, max-age=${config.cache.entrySeconds}`);
   return {
     slug: page.slug,
     headword: page.headword,
     entries,
     neighbors: near.map((n) => ({ slug: n.slug, headword: n.headword, current: n.rank === page.rank })),
+    backlinks,
   };
 });
