@@ -1,6 +1,7 @@
 // Lookups shared by the entry, suggest and exists routes.
 import config from "../../../../w1913.config.ts";
 import { foldForCompare } from "../../shared/fold.ts";
+import { lookupWith } from "../../shared/inflect.ts";
 
 export interface Suggestion { form: string; slug: string }
 
@@ -17,11 +18,30 @@ export function suggest(q: string, limit: number = config.features.suggestions):
     .all(f, f + "{", f, limit) as Suggestion[];
 }
 
-/** Rule: an exact headword or variant match after folding, else null. */
+/** Rule: an exact headword or variant match after folding, then a listed inflection ("went" → go), else null. */
 export function exactSlug(word: string): string | null {
   const f = foldForCompare(word);
   if (!f) return null;
-  const row = useDb().prepare("SELECT slug FROM forms WHERE fold = ? ORDER BY ord LIMIT 1").get(f) as { slug: string } | undefined;
+  const row = useDb().prepare("SELECT slug FROM forms WHERE fold = ? ORDER BY (kind = 'inflection'), ord LIMIT 1").get(f) as { slug: string } | undefined;
+  return row?.slug ?? null;
+}
+
+/**
+ * Rule (DESIGN.md §4, inflected lookup): exactSlug(), else the first of the
+ * suffix stripper's stems that is one ("walked" → walk, "goeth" → go). The
+ * form it came from is returned too, so a page can say "walked: a form of walk".
+ */
+export function lookupWord(word: string): { slug: string; via: string | null } | null {
+  return lookupWith(word, exactSlug, foldForCompare, stemSlug);
+}
+
+/** exactSlug() without affix entries ("Com-", "-ness"): a stem is never a prefix or suffix. */
+export function stemSlug(word: string): string | null {
+  const f = foldForCompare(word);
+  if (!f) return null;
+  const row = useDb()
+    .prepare("SELECT slug FROM forms WHERE fold = ? AND form NOT LIKE '%-' AND form NOT LIKE '-%' ORDER BY (kind = 'inflection'), ord LIMIT 1")
+    .get(f) as { slug: string } | undefined;
   return row?.slug ?? null;
 }
 

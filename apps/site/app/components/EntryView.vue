@@ -29,7 +29,8 @@ if (canonical && (canonical !== props.slug || isReserved !== props.reservedRoute
   await navigateTo(entryPath(canonical), { redirectCode: 301 });
 }
 
-const { data, error } = await useFetch<Page>(`/_w/entry/${encodeURIComponent(canonical)}`, { key: `entry-${canonical}` });
+const route = useRoute();
+const { data, error } = await useFetch<Page | { formOf: string }>(`/_w/entry/${encodeURIComponent(canonical)}`, { key: `entry-${canonical}` });
 if (error.value || !data.value) {
   throw createError({
     statusCode: error.value?.statusCode ?? 404,
@@ -37,7 +38,15 @@ if (error.value || !data.value) {
     data: (error.value?.data as { data?: unknown } | undefined)?.data ?? { word: canonical, suggestions: [] },
   });
 }
-const page = data.value;
+if ("formOf" in data.value) {
+  await navigateTo({ path: entryPath(data.value.formOf), query: { from: canonical } }, { redirectCode: 302 });
+}
+const page = data.value as Page;
+/** The inflected form that led here ("walked" for walk), shown as a note under the headword. */
+const fromForm = computed(() => {
+  const f = typeof route.query.from === "string" ? route.query.from.replace(/-/g, " ").slice(0, 40) : "";
+  return f && slugify(f) !== page.slug ? f : "";
+});
 
 /** Visible marked form: stress marks as the printed accents, syllables as middle dots. */
 function shownMarked(m: string | null, fallback: string) {
@@ -101,6 +110,7 @@ useHead({
       <article class="entry" data-lookup>
         <SearchBox size="bar" class="lookup" />
         <h1 class="hw" :style="fit(page.headword)">{{ page.headword }}</h1>
+        <p v-if="fromForm" class="from" role="note"><i>{{ fromForm }}</i> is a form of <b>{{ page.headword }}</b>.</p>
         <div aria-hidden="true" class="bar" />
         <SayIt :word="page.headword" />
         <p v-if="page.entries.length > 1" class="m count">{{ page.entries.length }} entries</p>
@@ -153,8 +163,8 @@ useHead({
         <section v-if="abbreviations.length || hasUnusual" class="sec more" aria-labelledby="abbr-h">
           <h2 id="abbr-h" class="hh small">Key</h2>
           <p v-if="hasUnusual" class="m keyline">
-            <span class="rare-sample" aria-hidden="true">word</span> A dashed underline marks a word that is rare in the
-            dictionary's own definitions: point at it, or tab to it, for its first sense.
+            <span class="rare-sample" aria-hidden="true">word</span> A dashed underline marks a word that may need
+            explaining (rare in the dictionary's own definitions, or one a short definition rests on): point at it, or tab to it, for its first sense.
           </p>
           <dl class="key">
             <div v-for="a in abbreviations" :key="a.abbr"><dt>{{ a.abbr }}</dt><dd>{{ a.meaning }}</dd></div>
@@ -167,6 +177,8 @@ useHead({
 </template>
 
 <style scoped>
+.from { margin: 12px 0 0; font-size: 18px; color: var(--mu); }
+.from b { color: var(--fg); }
 .lookup { margin: 0 0 40px; }
 .cols { display: flex; flex-wrap: wrap; gap: 48px; margin-top: 28px; }
 .entry { flex: 999 1 560px; min-width: 0; max-width: 860px; }

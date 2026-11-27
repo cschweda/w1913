@@ -28,8 +28,8 @@ if (!existsSync(manifestFile)) {
   process.exit(1);
 }
 const manifest = JSON.parse(readFileSync(manifestFile, "utf8"));
-if (manifest.version !== pin.version || !["senses", "syn", "labels"].every((l) => manifest.layers.includes(l)) || !manifest.vocabulary) {
-  console.error(`Edition ${manifest.version} with layers ${manifest.layers} does not match the pin ${pin.version} (needs senses, syn, labels and a vocabulary).`);
+if (manifest.version !== pin.version || !["senses", "syn", "labels", "prosody", "forms"].every((l) => manifest.layers.includes(l)) || !manifest.vocabulary) {
+  console.error(`Edition ${manifest.version} with layers ${manifest.layers} does not match the pin ${pin.version} (needs senses, syn, labels, prosody, forms and a vocabulary).`);
   process.exit(1);
 }
 const dbPath = path.resolve(process.env.W1913_DB_PATH ?? path.join(repo, config.paths.devDatabase));
@@ -46,6 +46,7 @@ useLabeler(makeLabeler(vocabulary));
 const NATURAL_SCIENCE = new Set(["zoology", "botany", "chemistry", "mineralogy", "anatomy", "physiology", "biology", "geology", "paleontology", "crystallography", "natural-history", "meteorology"]);
 
 type Entry = RenderableEntry & {
+  forms: string[]; prosody: { syllables: number; stress: string } | null;
   labels: { entry: string[]; senses: string[][] };
   id: string; ord: number; headword: string; variants: string[]; marked: string | null; pos: string | null; text: string;
 };
@@ -88,7 +89,7 @@ db.exec(`
   CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   CREATE TABLE entries (
     id TEXT PRIMARY KEY, slug TEXT NOT NULL, ord INTEGER NOT NULL, homograph_no INTEGER NOT NULL,
-    anchor TEXT NOT NULL, headword TEXT NOT NULL, headword_marked TEXT, pos TEXT, pos_title TEXT,
+    anchor TEXT NOT NULL, headword TEXT NOT NULL, headword_marked TEXT, syllables INTEGER, stress TEXT, pos TEXT, pos_title TEXT,
     letter TEXT NOT NULL, sense_count INTEGER NOT NULL, meta_html TEXT NOT NULL, body_html TEXT NOT NULL,
     text TEXT NOT NULL, summary TEXT NOT NULL, first_sense TEXT NOT NULL,
     card_ok INTEGER NOT NULL, card_json TEXT NOT NULL
@@ -104,7 +105,7 @@ db.exec(`
   CREATE TABLE forms (fold TEXT NOT NULL, form TEXT NOT NULL, slug TEXT NOT NULL, kind TEXT NOT NULL, ord INTEGER NOT NULL);
   CREATE TABLE backlinks (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
 `);
-const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense,@card_ok,@card_json)`);
+const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@syllables,@stress,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense,@card_ok,@card_json)`);
 let cardOk = 0;
 /** Rule (DESIGN.md §4): every sense carries a natural-science subject label. */
 const onlyNaturalScience = (e: Entry) =>
@@ -125,7 +126,7 @@ let unusualMarked = 0;
 const unusualFor = (e: Entry) => {
   const ownStem = foldForCompare(e.headword).slice(0, 5);
   return (text: string) => {
-    const spans = unusualSpans(text, { df, slugOf: (f) => slugByFold.get(f) ?? null, ownStem, maxEntries: config.features.unusualMaxEntries, perSense: config.features.unusualPerSense });
+    const spans = unusualSpans(text, { df, slugOf: (f) => slugByFold.get(f) ?? null, ownStem, maxEntries: config.features.unusualMaxEntries, perSense: config.features.unusualPerSense, shortMaxEntries: config.features.unusualShortMaxEntries });
     unusualMarked += spans.length;
     return spans;
   };
@@ -171,14 +172,14 @@ db.transaction(() => {
     const anchor = anchorOf.get(e.id)!;
     insEntry.run({
       id: e.id, slug, ord: e.ord, homograph_no: Number(e.id.match(/-(\d+)$/)![1]), anchor,
-      headword: e.headword, headword_marked: e.marked, pos: e.pos, pos_title: e.pos ? posTitle(e.pos) : null,
+      headword: e.headword, headword_marked: e.marked, syllables: e.prosody?.syllables ?? null, stress: e.prosody?.stress ?? null, pos: e.pos, pos_title: e.pos ? posTitle(e.pos) : null,
       letter: (foldForCompare(e.headword)[0] ?? "#").toUpperCase(),
       sense_count: e.senses.filter((s) => s.n !== null).length,
-      meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor, unusualFor(e)), text: e.text, summary: summaryOf(e), first_sense: firstSenseOf(e),
+      meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor, unusualFor(e), slug), text: e.text, summary: summaryOf(e), first_sense: firstSenseOf(e),
       card_ok: isCardOk(senseTexts(e)) && !onlyNaturalScience(e) ? (cardOk++, 1) : 0, card_json: JSON.stringify(cardOf(e)),
     });
     const seen = new Set<string>();
-    for (const [form, kind] of [[e.headword, "headword"], ...e.variants.map((v) => [v, "variant"])] as [string, string][]) {
+    for (const [form, kind] of [[e.headword, "headword"], ...e.variants.map((v) => [v, "variant"]), ...e.forms.map((v) => [v, "inflection"])] as [string, string][]) {
       const f = foldForCompare(form);
       if (!f || seen.has(f)) continue;
       seen.add(f);
@@ -260,6 +261,7 @@ db.exec(`
   CREATE INDEX essay_pages_slug ON essay_pages (slug);
   CREATE INDEX essays_sort ON essays (sort_key);
   CREATE INDEX entries_card ON entries (card_ok);
+  CREATE INDEX entries_rhythm ON entries (syllables, stress);
   CREATE INDEX page_labels_code ON page_labels (code, ord);
   CREATE INDEX page_labels_slug ON page_labels (slug);
   INSERT INTO fts_defs(fts_defs) VALUES ('optimize');

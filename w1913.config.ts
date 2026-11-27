@@ -91,7 +91,7 @@ export const config = {
      * A wrong value fails the deploy at the import step; the live site is
      * unaffected.
      */
-    version: "0.4",
+    version: "0.5",
   },
 
   // ---------------------------------------------------------------------------
@@ -180,6 +180,14 @@ export const config = {
     unusualMaxEntries: 3,
     /** At most this many unusual words are marked in one sense. */
     unusualPerSense: 2,
+    /**
+     * In a short definition (six words or fewer, like "The yaffle."), the
+     * meaning rests on its few words, so a looser limit applies: a word is
+     * linked when at most this many entries' definitions use it. 40 links
+     * yaffle (16), chaise and burdock, and skips rough, talk and plant.
+     * Raise it to link more ordinary words; lower it for fewer.
+     */
+    unusualShortMaxEntries: 40,
     /** Milliseconds to wait before showing a preview on pointer hover. */
     previewDelayMs: 250,
     /** Cards in a deck (DESIGN.md says 20). The trail deck holds at most this many too. */

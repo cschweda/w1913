@@ -2,7 +2,7 @@
 // the "segment" layer only; later layers add optional fields (DESIGN.md §3a).
 import { z } from "zod";
 
-export const LAYERS = ["segment", "senses", "syn", "labels", "prosody", "quotes"] as const;
+export const LAYERS = ["segment", "senses", "syn", "labels", "prosody", "forms", "quotes"] as const;
 export const Layer = z.enum(LAYERS);
 export type Layer = z.infer<typeof Layer>;
 
@@ -104,8 +104,18 @@ export const LabelsFields = z.object({
 export const LabelsEntry = SynEntry.extend(LabelsFields.shape).strict();
 export type LabelsEntry = z.infer<typeof LabelsEntry>;
 
-/** Any edition line: the segment layer alone, or with the senses, syn and labels layers. */
-export const EditionEntry = z.union([LabelsEntry, SynEntry, SensesEntry, SegmentEntry]);
+/** Fields the "prosody" and "forms" layers (data 0.5) add. */
+export const ProsodyFields = z.object({
+  /** Syllable count and stress pattern (one digit per syllable: 1 primary, 2 secondary, 0 none), or null when the header's marks do not say. */
+  prosody: z.object({ syllables: z.number().int().min(1).max(12), stress: z.string().regex(/^[012]{1,12}$/) }).strict().nullable(),
+  /** Inflected forms the header line lists ("Went", "Gone", "Going"), as printed. */
+  forms: z.array(z.string()),
+});
+export const ProsodyEntry = LabelsEntry.extend(ProsodyFields.shape).strict();
+export type ProsodyEntry = z.infer<typeof ProsodyEntry>;
+
+/** Any edition line: the segment layer alone, or with the senses, syn, labels, prosody and forms layers. */
+export const EditionEntry = z.union([ProsodyEntry, LabelsEntry, SynEntry, SensesEntry, SegmentEntry]);
 export type EditionEntry = z.infer<typeof EditionEntry>;
 
 export const Manifest = z

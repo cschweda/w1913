@@ -6,7 +6,9 @@ import { parseSenses, type Block, type SensesLayer } from "../senses/parse.ts";
 import type { XrefMatch } from "../senses/xrefs.ts";
 import { parseSyn } from "../syn/parse.ts";
 import { labelsInGroup, labelsInText } from "../labels/vocabulary.ts";
-import type { LabelsEntry, SegmentEntry, SensesEntry, SynEntry } from "./schema.ts";
+import { prosodyOf, stressPattern } from "../prosody/prosody.ts";
+import { listedForms } from "../prosody/forms.ts";
+import type { ProsodyEntry, LabelsEntry, SegmentEntry, SensesEntry, SynEntry } from "./schema.ts";
 
 type ResolvedXref = XrefMatch & { id: string | null };
 
@@ -86,4 +88,19 @@ export function toLabelsEntry(e: SynEntry): LabelsEntry {
   const entry = [...new Set([...e.headerLabels, ...e.headerMarks].flatMap((g) => labelsInGroup(g) ?? []))];
   const senses = e.senses.map((s) => [...new Set([...entry, ...labelsInText([s.text, ...s.sub.map((x) => x.text)].join(" "))])]);
   return { ...e, labels: { entry, senses }, layers: ["segment", "senses", "syn", "labels"] };
+}
+
+/**
+ * The prosody and forms layers (data 0.5): syllables and stress from the
+ * header's marked form (prosodyOf), and the inflected forms the header lists
+ * (listedForms).
+ */
+export function toProsodyEntry(e: LabelsEntry): ProsodyEntry {
+  const p = prosodyOf(e.marked);
+  return {
+    ...e,
+    prosody: p ? { syllables: p.syllables.length, stress: stressPattern(p) } : null,
+    forms: listedForms(e.inflections),
+    layers: ["segment", "senses", "syn", "labels", "prosody", "forms"],
+  };
 }

@@ -11,11 +11,11 @@ import { slice, type SliceName } from "../audit/slices.ts";
 import { segment } from "../segment/segment.ts";
 import { EditionEntry, Manifest, type Layer } from "./schema.ts";
 import { toSegmentEntries } from "./segment-layer.ts";
-import { makeResolver, toLabelsEntry, toSensesEntry, toSynEntry } from "./senses-layer.ts";
+import { makeResolver, toProsodyEntry, toLabelsEntry, toSensesEntry, toSynEntry } from "./senses-layer.ts";
 import { LABELS } from "../labels/vocabulary.ts";
 
 /** Bump whenever a parser change can alter the edition's content. */
-export const PARSER_VERSION = "0.3.0";
+export const PARSER_VERSION = "0.4.0";
 
 export interface ReleaseSpec {
   version: string;
@@ -32,6 +32,7 @@ export const RELEASES: readonly ReleaseSpec[] = [
   { version: "0.2", layers: ["segment", "senses"], scope: "all" },
   { version: "0.3", layers: ["segment", "senses", "syn"], scope: "all" },
   { version: "0.4", layers: ["segment", "senses", "syn", "labels"], scope: "all" },
+  { version: "0.5", layers: ["segment", "senses", "syn", "labels", "prosody", "forms"], scope: "all" },
 ];
 
 export interface BuildResult {
@@ -76,7 +77,8 @@ export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } 
   const resolve = spec.layers.includes("senses") ? makeResolver(segmentLayer) : null;
   const withSenses = resolve ? segmentLayer.map((e, i) => toSensesEntry(e, raw[i]!, resolve)) : segmentLayer;
   const withSyn = resolve && spec.layers.includes("syn") ? withSenses.map((e) => toSynEntry(e as ReturnType<typeof toSensesEntry>, resolve)) : withSenses;
-  const all = spec.layers.includes("labels") ? withSyn.map((e) => toLabelsEntry(e as ReturnType<typeof toSynEntry>)) : withSyn;
+  const withLabels = spec.layers.includes("labels") ? withSyn.map((e) => toLabelsEntry(e as ReturnType<typeof toSynEntry>)) : withSyn;
+  const all = spec.layers.includes("prosody") ? withLabels.map((e) => toProsodyEntry(e as ReturnType<typeof toLabelsEntry>)) : withLabels;
   const chosen =
     spec.scope === "all"
       ? all

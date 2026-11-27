@@ -151,7 +151,7 @@ function noteHtml(n: Block, locate: Locate): string {
  * sense is a paragraph of its own. Entry-level notes come first, the Syn.
  * paragraph last, shown as a plain line until data 0.3 (DESIGN.md §4a).
  */
-export function bodyHtml(e: RenderableEntry, locate: Locate, anchor: string, unusual: UnusualFinder = NONE): string {
+export function bodyHtml(e: RenderableEntry, locate: Locate, anchor: string, unusual: UnusualFinder = NONE, slug = ""): string {
   const parts: string[] = e.notes.map((n) => noteHtml(n, locate));
   let list: string[] = [];
   const flush = () => {
@@ -167,7 +167,7 @@ export function bodyHtml(e: RenderableEntry, locate: Locate, anchor: string, unu
     }
   }
   flush();
-  if (e.synonyms) parts.push(synonymsHtml(e.synonyms, locate, anchor));
+  if (e.synonyms) parts.push(synonymsHtml(e.synonyms, locate, anchor, slug));
   else if (e.syn) {
     const body = e.syn.replace(/^Syn\.\s*/, "").replace(/^\s*--\s*/, "");
     parts.push(`<p class="syn"><span class="cap">Syn.</span>${prose(body)}</p>`);
@@ -209,9 +209,10 @@ export function essayHtml(x: Essay, locate: Locate, headingTag = "h4"): string {
  * The Synonyms block of an entry (DESIGN.md §4, "Is there a better word?"):
  * the list with each word linked, the note with its links, then the essays.
  */
-export function synonymsHtml(s: Synonyms, locate: Locate, anchor: string): string {
+export function synonymsHtml(s: Synonyms, locate: Locate, anchor: string, slug = ""): string {
   let html = `<section class="syns" id="${anchor}-syn" aria-labelledby="${anchor}-syn-h"><h3 id="${anchor}-syn-h" class="cap sh">Synonyms</h3>`;
   if (s.words.length) html += `<ul class="sw">${s.words.map((w) => `<li>${linkedHtml(w, locate)}</li>`).join("")}</ul>`;
+  if (s.words.length > 2 && slug) html += `<p class="cmp"><a href="/search?like=${encodeURIComponent(slug)}" class="t">Filter these by rhythm →</a></p>`;
   if (s.note) html += blockHtml(s.note, locate, "p", "snote");
   for (const x of s.essays) html += essayHtml({ ...x, xrefs: [] }, locate);
   return html + "</section>";

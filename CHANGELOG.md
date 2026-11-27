@@ -17,6 +17,40 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-27
+
+Phase 4, "I need a word with this rhythm" and "Would my 1890s narrator say this?". Data 0.5
+(parser 0.4.0) adds the `prosody` and `forms` layers.
+
+### Added
+
+- **Data 0.5:** `prosody` (syllable count and stress pattern, one digit per syllable, for
+  109,178 entries; the rule moved from the site into the data package so both share it) and
+  `forms` (the inflections the header lines list, 14,750 forms: *Went*, *Gone*, *Oxen*,
+  *Better*). Commentary after the forms ("These words, though used as…") is never read as forms.
+- **Suffix stripper** (`shared/inflect.ts`), one module for the server and the browser: plurals,
+  past tenses and participles with restored -e or undoubled consonants, comparatives, adverbs,
+  the archaic forms the 1913's quotations use (*goeth*, *knowest*, *lov'd*), and learned plurals
+  (*criteria*, *larvae*, *appendices*). Prefixes and suffixes ("Com-") are never stems. Tested on
+  220 forms, every one found (the Phase 4 exit test asks for 200).
+- **Inflected lookup:** `/walked` opens *walk* with "walked is a form of Walk"; the lookup box,
+  Look up by selection and `/w/go` all use it.
+- **Rhythm filter** on `/search`: syllables and stressed syllable, over definition search or
+  "synonyms of a word". Results show the marked form (*Haugh″ty*). Synonym sections link to it.
+- **Period check** at `/check`: paste a passage to see which words are not in this dictionary.
+  Runs in the browser on a 350 KB word list fetched once; the passage is never sent anywhere.
+  "Skip names" is on by default; the page says what a mark does and does not mean.
+- Check in the navbar; rhythm and the period check in `/llms.txt`.
+
+### Changed
+
+- **More words in definitions are linked for a preview** (you asked for *yaffle* in *Yockel*):
+  in a short definition (six words or fewer, like "The yaffle."), every word the meaning rests on
+  is linked when at most 40 entries' definitions use it (`features.unusualShortMaxEntries`), so
+  *yaffle*, *chaise*, *burdock* and *caprice* are linked but *rough*, *talk* and *plant* are not.
+  Elsewhere the rarity rule now skips inflections of other headwords (*strutting*). 34,605 words
+  are linked, up from 16,238. The Key explains the dashed underline accordingly.
+
 ## [0.8.0] - 2026-11-27
 
 Phase 3, "What's the word for…?". Data 0.4 (parser 0.3.0) adds the `labels` layer.
@@ -287,7 +321,8 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/cschweda/w1913/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/cschweda/w1913/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/cschweda/w1913/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/cschweda/w1913/compare/v0.7.0...v0.7.1

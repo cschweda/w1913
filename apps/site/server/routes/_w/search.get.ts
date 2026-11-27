@@ -1,11 +1,24 @@
-// Definition search: /_w/search?q=...&page=N (DESIGN.md §4).
+// Definition search and the rhythm filter:
+// /_w/search?q=...&syl=2&stress=1&page=N, or ?like=lofty for synonyms of a word.
 import config from "../../../../../w1913.config.ts";
-import { searchDefinitions } from "../../../shared/search";
+import { searchDefinitions, synonymsOf } from "../../../shared/search";
+import { lookupWord } from "../../utils/lookup";
+
+const int = (v: unknown, max: number) => { const n = Number(v); return Number.isInteger(n) && n >= 1 && n <= max ? n : null; };
 
 export default defineEventHandler((event) => {
-  const q = String(getQuery(event).q ?? "").slice(0, 120);
-  const page = Math.max(1, Math.min(50, Number(getQuery(event).page ?? 1) || 1));
+  const query = getQuery(event);
+  const q = String(query.q ?? "").slice(0, 120);
+  const like = String(query.like ?? "").slice(0, 60).trim();
+  const rhythm = { syllables: int(query.syl, 12), stress: int(query.stress, 12) };
+  const page = Math.max(1, Math.min(50, Number(query.page ?? 1) || 1));
   const per = config.features.resultsPerPage;
   setHeader(event, "cache-control", `public, max-age=${config.cache.entrySeconds}`);
-  return { ...searchDefinitions(useDb(), q, per, (page - 1) * per), page, per };
+  if (like) {
+    const found = lookupWord(like);
+    if (!found) return { query: like, total: 0, hits: [], broadened: false, page, per, like: null };
+    const headword = (useDb().prepare("SELECT headword FROM pages WHERE slug = ?").get(found.slug) as { headword: string }).headword;
+    return { ...synonymsOf(useDb(), found.slug, rhythm, per, (page - 1) * per), page, per, like: { slug: found.slug, headword } };
+  }
+  return { ...searchDefinitions(useDb(), q, per, (page - 1) * per, rhythm), page, per, like: null };
 });

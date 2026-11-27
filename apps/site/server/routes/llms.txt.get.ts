@@ -19,7 +19,10 @@ Each entry lives at ${s.url}/<word> (for example ${s.url}/sublime). Route words 
 - [Synonyms](${s.url}/synonyms): the dictionary's 624 essays on how near-synonyms differ, A to Z
 - [Compare words](${s.url}/synonyms/compare?w=abandon,desert,forsake): two or three words side by side
 - [Search definitions](${s.url}/search?q=walk+idly): find the word for a meaning, in the words the 1913 definitions use
+- [Period check](${s.url}/check): paste a passage to see which words the 1913 dictionary does not contain (runs in the browser)
+- [Synonyms by rhythm](${s.url}/search?like=lofty&syl=2&stress=1): synonyms of a word filtered by syllables and stress
 - [Labels](${s.url}/label): words by usage (obsolete, poetic, colloquial) and by trade or science (nautical, law, heraldry)
+- [Search](${s.url}/search?like=lofty): inflected forms work everywhere (w1913.com/walked opens walk)
 - [Cards](${s.url}/cards): a word at a time, at random, by label, by search, or from the words you visited
 - [About](${s.url}/about): sources, licence, and privacy
 

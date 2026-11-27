@@ -1,6 +1,6 @@
 // One page's worth of entries (all homographs of a slug) plus its neighbors.
 import config from "../../../../../../w1913.config.ts";
-import { didYouMean } from "../../../utils/lookup";
+import { didYouMean, lookupWord } from "../../../utils/lookup";
 
 interface Row {
   id: string; anchor: string; headword: string; headword_marked: string | null; pos: string | null;
@@ -12,6 +12,9 @@ export default defineEventHandler((event) => {
   const db = useDb();
   const page = db.prepare("SELECT slug, headword, rank FROM pages WHERE slug = ?").get(slug) as { slug: string; headword: string; rank: number } | undefined;
   if (!page) {
+    // Inflected lookup (DESIGN.md §4): /walked, /went and /goeth lead to their entries.
+    const found = lookupWord(slug.replace(/-/g, " "));
+    if (found && found.slug !== slug) return { formOf: found.slug };
     throw createError({ statusCode: 404, statusMessage: "Not in this dictionary", data: { word: slug, suggestions: didYouMean(slug.replace(/-/g, " ")) } });
   }
   const entries = db

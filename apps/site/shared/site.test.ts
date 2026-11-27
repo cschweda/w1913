@@ -182,13 +182,20 @@ describe("unusual words", () => {
     ["Amazement or consternation; terror."], ["Great consternation."], ["Mere terror and terror again."],
     ["A sudden terror."], ["Terror, plainly."], ["terror once more"],
   ]);
-  const opts = (own = "") => ({ df, slugOf: (f: string) => ({ consternation: "consternation", amazement: "amazement" })[f] ?? null, ownStem: own, maxEntries: 3, perSense: 2 });
+  const opts = (own = "") => ({ df, slugOf: (f: string) => ({ consternation: "consternation", amazement: "amazement" })[f] ?? null, ownStem: own, maxEntries: 3, perSense: 2, shortMaxEntries: 3 });
   it("counts each entry once", () => {
     expect(df.get("consternation")).toBe(2);
     expect(df.get("terror")).toBe(4);
   });
   it("marks a rare headword, not a common one or a non-headword", () => {
     expect(unusualSpans("Loss of courage; consternation and terror.", opts())).toEqual([{ start: 17, end: 30, slug: "consternation" }]);
+  });
+  it("in a short definition, links a commoner word the meaning rests on, up to the looser limit", () => {
+    const many = definitionFrequency(Array.from({ length: 16 }, () => ["The yaffle is a bird."]).concat(Array.from({ length: 60 }, () => ["a rough thing"])));
+    const o = { df: many, slugOf: (f: string) => ({ yaffle: "yaffle", rough: "rough" })[f] ?? null, ownStem: "", maxEntries: 3, perSense: 2, shortMaxEntries: 40 };
+    expect(unusualSpans("The yaffle.", o)).toEqual([{ start: 4, end: 10, slug: "yaffle" }]);
+    expect(unusualSpans("Rough; rough and harsh.", o)).toEqual([]);
+    expect(unusualSpans("A long definition that mentions the yaffle among many other ordinary words here.", o)).toEqual([]);
   });
   it("skips the entry's own family", () => {
     expect(unusualSpans("consternation", opts("const"))).toEqual([]);
