@@ -10,7 +10,8 @@
     "preview": "node .output/server/index.mjs",
     "db:import": "node scripts/db-import.ts",
     "typecheck": "nuxt typecheck",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "cmu:subset": "node scripts/cmu-subset.ts"
   },
   "dependencies": {
     "@nuxt/ui": "^4.13.1",

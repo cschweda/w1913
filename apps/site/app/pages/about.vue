@@ -55,6 +55,15 @@ useHead({ script: [ldScript(webPageLd({ type: "AboutPage", url: `${config.site.u
       USA. Its Greek and some symbols were never transcribed; where they are missing, the dictionary shows the gap rather than
       guessing. Typos are corrected only after a person checks them against the printed page.
     </p>
+    <h2 id="sounds">Sounds like</h2>
+    <p>
+      The one thing not from the 1913: the plain "sounds like" spelling under some headwords (<i>sublime</i>: suh-BLYME, the
+      stressed syllable in capitals). The Gutenberg text keeps each word's syllables and stress but lost its vowel marks, so it
+      cannot say how a vowel sounds. These spellings come from the
+      <a href="https://github.com/cmusphinx/cmudict" class="x">CMU Pronouncing Dictionary</a> (Carnegie Mellon University,
+      BSD-style licence), and give modern American pronunciation, not the 1913's. A word gets one only when CMU has it and agrees
+      with the 1913 on its syllables and stress; most of the 1913's rarer words have none.
+    </p>
     <h2>Licence</h2>
     <p>
       The text is in the public domain. Our structured edition of it is dedicated to the public domain under CC0 1.0,

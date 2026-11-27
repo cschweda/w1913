@@ -162,6 +162,15 @@ The answer key and `eval.json` are development artefacts. They are gitignored an
 | **Current #660–670 `-0.txt` / `-h.htm`** | Tags flattened; same banner. |
 | **GCIDE** | GPL; mixes in WordNet, Century, and volunteer text. |
 
+### The one outside source: "Sounds like" (v0.16.0)
+
+The plain text keeps syllables and stress but lost its vowel marks (§2 problem list; *Yō"dler* became *Yo"dler*), so it cannot say how a vowel sounds. The site (not the edition) adds a plain sound-it-out spelling ("suh-BLYME") from the **CMU Pronouncing Dictionary** (Carnegie Mellon University, BSD-style licence, `apps/site/data/CMUDICT-LICENSE`). It is kept apart from everything else:
+
+- It never enters the edition or its layers; the edition stays derived from #29765 alone.
+- `apps/site/scripts/cmu-subset.ts` cuts the pinned `cmudict.dict` (SHA-256 checked) to the words W1913 has: 31,995 words, 1 MB, committed as `apps/site/data/cmudict-w1913.txt`, so deploys fetch nothing.
+- It is modern American and says so on every use, with a link to the About page's account of it.
+- **Rule:** an entry shows it only when CMU has the headword and agrees with the 1913 on syllable count and primary stress (so *RE-cord*, n., and *re-CORD*, v., each get their own); for one syllable, which the 1913 leaves unmarked, only a word CMU says one way (*time*, never *lead* or *wind*). Otherwise nothing is shown rather than a guess. 35,386 entries have one; most of the 1913's rarer words do not (CMU covers 28% of single-word pages).
+
 ---
 
 ## 3. Architecture

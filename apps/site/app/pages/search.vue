@@ -110,9 +110,12 @@ useHead({ script: [ldScript(webPageLd({ type: "SearchResultsPage", url: `${confi
       </ol>
       <ol v-else class="hits" :start="(page - 1) * data.per + 1">
         <li v-for="h in data.hits" :key="h.slug">
-          <NuxtLink :to="entryPath(h.slug)" class="hw x">{{ h.headword }}</NuxtLink>
-          <span v-if="h.marked && h.marked !== h.headword" class="rh" aria-hidden="true">{{ marked(h.marked, h.headword) }}</span>
-          <span v-if="h.pos" class="pos">{{ h.pos }}</span>
+          <!-- A wrapping row: Vue drops the whitespace between these, so plain inline text could not break (WCAG 1.4.10). -->
+          <div class="hl">
+            <NuxtLink :to="entryPath(h.slug)" class="hw x">{{ h.headword }}</NuxtLink>
+            <span v-if="h.marked && h.marked !== h.headword" class="rh" aria-hidden="true">{{ marked(h.marked, h.headword) }}</span>
+            <span v-if="h.pos" class="pos">{{ h.pos }}</span>
+          </div>
           <!-- Snippet from the edition; escaped in shared/search.ts, matches as <mark>. -->
           <p class="snip" v-html="h.snippet" />
         </li>
@@ -147,12 +150,13 @@ useHead({ script: [ldScript(webPageLd({ type: "SearchResultsPage", url: `${confi
 .hq p { margin: 0; }
 .qa { margin-top: 4px; font-size: 15px; color: var(--mu); }
 .qa::before { content: "\2014\00a0"; }
-.rh { margin-left: 10px; color: var(--mu); font-size: 16px; }
+.hl { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.rh { color: var(--mu); font-size: 16px; overflow-wrap: anywhere; }
 .hits { margin: 16px 0 0; padding-left: 36px; }
 .hits li { padding: 12px 0; border-top: 1px solid var(--ln); }
 .hits li::marker { color: var(--mu); font-size: 14px; }
 .hw { font-size: 22px; font-weight: 700; }
-.pos { margin-left: 8px; color: var(--mu); font-size: 15px; }
+.pos { color: var(--mu); font-size: 15px; }
 .snip { margin: 4px 0 0; font-size: 17px; line-height: 1.5; }
 @media (max-width: 560px) { .hits { padding-left: 28px; } }
 .pager { display: flex; align-items: center; gap: 24px; margin-top: 24px; }

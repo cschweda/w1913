@@ -17,6 +17,32 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-27
+
+"Sounds like", a phone-sized header, and a WCAG 2.1 AA pass.
+
+### Added
+
+- **"Sounds like"** under the headword: a plain sound-it-out spelling, the stressed syllable in
+  capitals (*sublime*: suh-BLYME; *gossamer*: GAH-suh-mer). From the CMU Pronouncing Dictionary,
+  so modern American, and labelled so, with an About section explaining it. Shown only where CMU
+  agrees with the 1913's own syllables and stress: *minute* gets MIN-uht as a noun and my-NOOT as
+  an adjective; *lead* and *wind* get none. 35,386 entries. The first outside source, kept out of
+  the edition (DESIGN.md §2). Say it is unchanged.
+- **`pnpm --filter site run cmu:subset`** rebuilds the committed CMU subset
+  (`apps/site/data/cmudict-w1913.txt`, 1 MB) from the pinned `cmudict.dict`.
+
+### Changed
+
+- **Header on small screens:** below 760px the sections fold behind a **Menu** button (visible
+  label, `aria-expanded`; Escape closes it and returns focus; choosing a page or clicking outside
+  closes it). The theme switch moves into the menu there. "Saved" joins the sections.
+- **Reflow (WCAG 1.4.10):** search results no longer scroll sideways at 320px (a long headword
+  and its marked form now wrap). Checked: no horizontal scrolling on 20 page types at 320, 390,
+  768 and 1024px.
+- **WCAG 2.1 AA:** axe finds 0 violations on 17 page types at desktop and phone sizes;
+  pixel-level contrast checks pass on the main pages.
+
 ## [0.15.0] - 2026-11-27
 
 Named lists: words gathered by purpose, kept in the browser.

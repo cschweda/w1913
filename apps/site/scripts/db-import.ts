@@ -19,6 +19,7 @@ import { bodyHtml, essayHtml, metaHtml, phraseAnchor, prose, useLabeler, type Co
 import { makeLabeler, type Label } from "../shared/labels.ts";
 import { definitionFrequency, unusualSpans } from "../shared/unusual.ts";
 import { cardSenses, isCardOk } from "../shared/cards.ts";
+import { agreeing, parseCmu, respell } from "../shared/sounds.ts";
 import { entryPath } from "../shared/fold.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -56,6 +57,20 @@ type Entry = RenderableEntry & {
   forms: string[]; prosody: { syllables: number; stress: string } | null;
   labels: { entry: string[]; senses: string[][] };
   id: string; ord: number; headword: string; variants: string[]; marked: string | null; pos: string | null; text: string;
+};
+
+// "Sounds like" (v0.16.0): the CMU subset committed in data/ (scripts/cmu-subset.ts), modern American.
+const cmuFile = path.join(here, "../data/cmudict-w1913.txt");
+const cmu = existsSync(cmuFile) ? parseCmu(readFileSync(cmuFile, "utf8")) : new Map();
+let soundsCount = 0;
+/** The sound-it-out spelling of an entry's headword, when CMU has it and agrees with the 1913's stress. */
+const soundsOf = (e: Entry) => {
+  const w = e.headword.toLowerCase();
+  if (!/^[a-z']+$/.test(w)) return null;
+  const p = agreeing(cmu.get(w), e.prosody?.stress ?? null);
+  if (!p) return null;
+  soundsCount++;
+  return respell(p);
 };
 
 const t0 = performance.now();
@@ -96,7 +111,7 @@ db.exec(`
   CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   CREATE TABLE entries (
     id TEXT PRIMARY KEY, slug TEXT NOT NULL, ord INTEGER NOT NULL, homograph_no INTEGER NOT NULL,
-    anchor TEXT NOT NULL, headword TEXT NOT NULL, headword_marked TEXT, syllables INTEGER, stress TEXT, pos TEXT, pos_title TEXT,
+    anchor TEXT NOT NULL, headword TEXT NOT NULL, headword_marked TEXT, syllables INTEGER, stress TEXT, pos TEXT, pos_title TEXT, sounds TEXT,
     letter TEXT NOT NULL, sense_count INTEGER NOT NULL, meta_html TEXT NOT NULL, body_html TEXT NOT NULL,
     text TEXT NOT NULL, summary TEXT NOT NULL, first_sense TEXT NOT NULL,
     card_ok INTEGER NOT NULL, card_json TEXT NOT NULL
@@ -116,7 +131,7 @@ db.exec(`
   CREATE TABLE phrases (fold TEXT NOT NULL, phrase TEXT NOT NULL, slug TEXT NOT NULL, anchor TEXT NOT NULL, ord INTEGER NOT NULL);
   CREATE TABLE backlinks (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
 `);
-const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@syllables,@stress,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense,@card_ok,@card_json)`);
+const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@syllables,@stress,@pos,@pos_title,@sounds,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense,@card_ok,@card_json)`);
 let cardOk = 0;
 /** Rule (DESIGN.md §4): every sense carries a natural-science subject label. */
 const onlyNaturalScience = (e: Entry) =>
@@ -208,7 +223,7 @@ db.transaction(() => {
     const anchor = anchorOf.get(e.id)!;
     insEntry.run({
       id: e.id, slug, ord: e.ord, homograph_no: Number(e.id.match(/-(\d+)$/)![1]), anchor,
-      headword: e.headword, headword_marked: e.marked, syllables: e.prosody?.syllables ?? null, stress: e.prosody?.stress ?? null, pos: e.pos, pos_title: e.pos ? posTitle(e.pos) : null,
+      headword: e.headword, headword_marked: e.marked, sounds: soundsOf(e), syllables: e.prosody?.syllables ?? null, stress: e.prosody?.stress ?? null, pos: e.pos, pos_title: e.pos ? posTitle(e.pos) : null,
       letter: (foldForCompare(e.headword)[0] ?? "#").toUpperCase(),
       sense_count: e.senses.filter((s) => s.n !== null).length,
       meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor, unusualFor(e), slug), text: e.text, summary: summaryOf(e), first_sense: firstSenseOf(e),
@@ -431,5 +446,5 @@ renameSync(tmp, dbPath);
 }
 // A slug that folds two different spellings together would make a page show
 // entries that do not match its headword; report it rather than hide it.
-console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, ${[...backlinks.values()].reduce((a, m) => a + m.size, 0)} backlinks, ${unusualMarked} unusual words, ${cardOk} card_ok entries, ${phraseCount} phrases, in ${Math.round(performance.now() - t0)} ms`);
+console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, ${[...backlinks.values()].reduce((a, m) => a + m.size, 0)} backlinks, ${unusualMarked} unusual words, ${cardOk} card_ok entries, ${phraseCount} phrases, ${soundsCount} "sounds like", in ${Math.round(performance.now() - t0)} ms`);
 console.log(`  ${dbPath}`);

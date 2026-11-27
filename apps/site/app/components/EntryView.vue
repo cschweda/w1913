@@ -10,7 +10,7 @@ import { definedTermLd, ldScript } from "../../shared/structured";
 
 interface Entry {
   id: string; anchor: string; headword: string; headword_marked: string | null; pos: string | null;
-  pos_title: string | null; sense_count: number; meta_html: string; body_html: string;
+  pos_title: string | null; sounds: string | null; sense_count: number; meta_html: string; body_html: string;
 }
 interface Page {
   labels: { code: string; name: string }[];
@@ -140,6 +140,10 @@ useHead({
               <template v-for="(s, i) in prosody[e.id]!.syllables" :key="i"><span v-if="i" class="dot">·</span><span :class="['syl', `s${s.stress}`]">{{ s.text }}</span></template>
             </span>
             <span class="pros-text">{{ prosody[e.id]!.summary }}</span>
+            <span v-if="e.sounds" class="pros-text sounds">sounds like <b class="sl">{{ e.sounds }}</b> <span class="src">(modern American, <a href="/about#sounds" class="x">CMU</a>)</span></span>
+          </p>
+          <p v-else-if="e.sounds" class="pros">
+            <span class="pros-text sounds">sounds like <b class="sl">{{ e.sounds }}</b> <span class="src">(modern American, <a href="/about#sounds" class="x">CMU</a>)</span></span>
           </p>
           <!-- Rendered at import from the edition (shared/render.ts); all text escaped there. -->
           <div v-html="e.meta_html" />
@@ -217,6 +221,7 @@ useHead({
 .syl.s1 { color: var(--fg); font-weight: 700; box-shadow: inset 0 -3px 0 var(--ac); }
 .syl.s2 { color: var(--fg); font-weight: 500; box-shadow: inset 0 -1px 0 var(--mu); }
 .pros-text { font-size: 14px; color: var(--mu); }
+.sl { color: var(--fg); font-weight: 700; letter-spacing: .02em; }
 .more { margin-top: 56px; }
 .small { font-size: 22px; }
 .n { font-size: 15px; font-weight: 400; color: var(--mu); margin-left: 8px; }
