@@ -1,0 +1,91 @@
+{
+  "canonical": {
+    "29765.txt": {
+      "urls": [
+        "https://www.gutenberg.org/ebooks/29765.txt.utf-8",
+        "https://gutenberg.pglaf.org/2/9/7/6/29765/29765-0.txt"
+      ],
+      "sha256": "86fb9c28c32008ea288ca4bcf34f4f0d3d11ccf9e0898294d98b73671497f1d3"
+    }
+  },
+  "tagged": {
+    "pgw050ab.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/660/old/pgw050ab.txt",
+        "https://gutenberg.pglaf.org/6/6/660/old/pgw050ab.txt"
+      ],
+      "sha256": "5c8724acbbb5cec2649ce70abc2189a38801380d8d9641c393bb3b7919426dd7"
+    },
+    "pgw050c.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/661/old/pgw050c.zip",
+        "https://gutenberg.pglaf.org/6/6/661/old/pgw050c.zip"
+      ],
+      "sha256": "548d2db183b42526d1c9ec7f9b4af6e240877ddb8fc86420a198519aa9856053",
+      "extract": "pgw050c.txt"
+    },
+    "pgw050de.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/662/old/pgw050de.txt",
+        "https://gutenberg.pglaf.org/6/6/662/old/pgw050de.txt"
+      ],
+      "sha256": "116a4adf6d9d9a32b2a94116f7b252f1f3267b2ee05f7e9dfcb37f833a0b577c"
+    },
+    "pgw050fh.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/663/old/pgw050fh.txt",
+        "https://gutenberg.pglaf.org/6/6/663/old/pgw050fh.txt"
+      ],
+      "sha256": "12b9b3a07506fcc32c0299e97b67bc21b172b8f30e4392ac9765d409f2c73200"
+    },
+    "pgw050il.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/664/old/pgw050il.txt",
+        "https://gutenberg.pglaf.org/6/6/664/old/pgw050il.txt"
+      ],
+      "sha256": "ae6499491c749b7c4ef31fc6f6c7638dd2e42e5ad9a4d28f6b0994a123a9ddde"
+    },
+    "pgw050mo.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/665/old/pgw050mo.txt",
+        "https://gutenberg.pglaf.org/6/6/665/old/pgw050mo.txt"
+      ],
+      "sha256": "887d63ca311a565e964c6872149a4dff5b5829e2bb6ab91a0671e6e2c35bfc29"
+    },
+    "pgw050pq.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/666/old/pgw050pq.txt",
+        "https://gutenberg.pglaf.org/6/6/666/old/pgw050pq.txt"
+      ],
+      "sha256": "4852dee0a4c2bca20f296f71de6cb52478cc6bfef86defa8f585129a857378bd"
+    },
+    "pgw050r.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/667/old/pgw050r.txt",
+        "https://gutenberg.pglaf.org/6/6/667/old/pgw050r.txt"
+      ],
+      "sha256": "0f1c33533746d100d551b044b20eee4e27b24795d45c89744e69a07df87eb2b0"
+    },
+    "pgw050s.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/668/old/pgw050s.txt",
+        "https://gutenberg.pglaf.org/6/6/668/old/pgw050s.txt"
+      ],
+      "sha256": "896cbc6d2987e4c9fce59d3bd0c3e771ced3aeef2027baccacd9ee225c173c11"
+    },
+    "pgw050tw.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/669/old/pgw050tw.txt",
+        "https://gutenberg.pglaf.org/6/6/669/old/pgw050tw.txt"
+      ],
+      "sha256": "3295f39ec35d73905820acee0d69d4aebaf19d3901f5173bce7b2bcf90360544"
+    },
+    "pgw050xz.txt": {
+      "urls": [
+        "https://www.gutenberg.org/files/670/old/pgw050xz.txt",
+        "https://gutenberg.pglaf.org/6/7/670/old/pgw050xz.txt"
+      ],
+      "sha256": "12dee92b3b6f60ebc7a6b2d36d6baf37cf2b617597ec612ddeb03afd5846fe20"
+    }
+  }
+}
