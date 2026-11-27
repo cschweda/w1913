@@ -1,0 +1,4 @@
+{
+  "about": "Reviewed corrections to Project Gutenberg #29765 (DESIGN.md §2, Known problems 1). Each fixes one typo on one line of the canonical file, and only after a person has checked it against a scan of the printed 1913 page. Never copy corrections in bulk from the tagged edition. See packages/data/src/corrections/README.md.",
+  "corrections": []
+}

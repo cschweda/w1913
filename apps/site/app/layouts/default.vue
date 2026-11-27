@@ -17,6 +17,7 @@ const workshop = config.site.workshop;
       <nav aria-label="Site links" class="links">
         <a :href="`${repo}/blob/main/CHANGELOG.md`" class="t">W1913 v{{ version }}</a>
         <NuxtLink to="/about" class="t">About</NuxtLink>
+        <NuxtLink to="/saved" class="t">Saved words</NuxtLink>
         <a :href="repo" class="t">Source on GitHub</a>
         <a :href="workshop.url" class="t">{{ workshop.name }}</a>
       </nav>

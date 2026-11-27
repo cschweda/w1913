@@ -22,6 +22,8 @@ const index = ref(0);
 const flipped = ref(false);
 const loading = ref(true);
 const { trail } = useTrail();
+const { saved, has: isSaved, toggle: toggleSaved } = useSaved();
+const rated = ref("");
 const { data: labelList } = await useFetch<{ code: string; name: string }[]>("/_w/labels", { key: "labels-for-cards" });
 const labelName = (code: string) => labelList.value?.find((l) => l.code === code)?.name ?? code;
 /** Three label decks offered as buttons, as in the mockup; any other label is reached from its label page. */
@@ -35,6 +37,7 @@ const deckLabel = computed(() => {
   const d = deckName.value;
   if (d === "random") return "Random deck";
   if (d === "trail") return "Trail deck";
+  if (d === "saved") return "Saved deck";
   if (d.startsWith("label:")) return `${labelName(d.slice(6))} deck`;
   if (d.startsWith("q:")) return `Search deck: “${d.slice(2)}”`;
   if (d.startsWith("author:")) return `${authorName.value ?? d.slice(7)} deck`;
@@ -48,6 +51,10 @@ async function deal() {
   try {
     if (deckName.value === "trail") {
       const slugs = trail.value.map((t) => t.slug).slice(-config.features.deckSize);
+      cards.value = slugs.length ? await $fetch<Card[]>("/_w/cards", { query: { slugs: slugs.join(",") } }) : [];
+    } else if (deckName.value === "saved") {
+      // Up to a deck's worth of saved words, at random (DESIGN.md §4, Saved deck).
+      const slugs = saved.value.map((w) => w.slug).sort(() => Math.random() - 0.5).slice(0, config.features.deckSize);
       cards.value = slugs.length ? await $fetch<Card[]>("/_w/cards", { query: { slugs: slugs.join(",") } }) : [];
     } else {
       cards.value = await $fetch<Card[]>("/_w/cards", { query: { deck: deckName.value } });
@@ -70,6 +77,18 @@ function setShow(v: "word" | "definition") {
 const flip = () => { if (card.value) flipped.value = !flipped.value; };
 const prev = () => { if (index.value > 0) { index.value--; flipped.value = false; } };
 const next = () => { if (index.value < cards.value.length - 1) { index.value++; flipped.value = false; } };
+/**
+ * Self-rating (DESIGN.md §4): "Knew it" moves on; "New to me" saves the word
+ * (if it is not saved already) and moves on. No score, no scheduling.
+ */
+function rate(newToMe: boolean) {
+  const c = card.value;
+  if (!c) return;
+  if (newToMe && !isSaved(c.slug)) toggleSaved(c.slug, c.headword);
+  rated.value = newToMe ? `Saved ${c.headword}.` : "";
+  if (index.value < cards.value.length - 1) next();
+  else rated.value += " That was the last card.";
+}
 
 /** Keys act only when focus is on the page itself, not in a field or on a control (which handle their own keys). */
 function onKey(e: KeyboardEvent) {
@@ -100,6 +119,7 @@ useHead({ script: [ldScript(webPageLd({ url: `${config.site.url}/cards`, name: "
         <button type="button" :class="['btn', { on: deckName === 'random' }]" :aria-pressed="deckName === 'random'" @click="choose('random')">Random</button>
         <button v-for="c in QUICK" :key="c" type="button" :class="['btn', { on: deckName === `label:${c}` }]" :aria-pressed="deckName === `label:${c}`" @click="choose(`label:${c}`)">{{ labelName(c) }}</button>
         <button type="button" :class="['btn', { on: deckName === 'trail' }]" :aria-pressed="deckName === 'trail'" @click="choose('trail')">Trail</button>
+        <button type="button" :class="['btn', { on: deckName === 'saved' }]" :aria-pressed="deckName === 'saved'" @click="choose('saved')">Saved</button>
         <NuxtLink to="/label" class="t x all">All labels</NuxtLink>
         <button type="button" class="btn btn-quiet" @click="deal">New deck</button>
       </div>
@@ -120,6 +140,7 @@ useHead({ script: [ldScript(webPageLd({ url: `${config.site.url}/cards`, name: "
         <p v-if="loading" class="m empty">Dealing…</p>
         <div v-else-if="!card" class="empty">
           <p v-if="deckName === 'trail'" class="m">Your trail is empty. Look up a few words, then come back for a deck of them.</p>
+          <p v-else-if="deckName === 'saved'" class="m">No saved words yet. Use <b>Save</b> on an entry, or <b>New to me</b> on a card.</p>
           <p v-else class="m">No cards in this deck.</p>
           <NuxtLink to="/" class="t x">Look up a word</NuxtLink>
         </div>
@@ -156,8 +177,13 @@ useHead({ script: [ldScript(webPageLd({ url: `${config.site.url}/cards`, name: "
           </div>
           <p v-if="showFirst === 'word'" class="m"><NuxtLink :to="`${entryPath(card.slug)}#${card.anchor}`" class="x">Open the full entry</NuxtLink></p>
           <p v-else class="m">Think of the word, then flip the card.</p>
+          <div class="rate" role="group" aria-label="How did you do?">
+            <button type="button" class="btn" @click="rate(false)">Knew it</button>
+            <button type="button" class="btn" @click="rate(true)">New to me<span v-if="isSaved(card.slug)" class="mu"> (saved)</span></button>
+          </div>
         </div>
       </div>
+    <p class="vh" role="status">{{ rated }}</p>
     </section>
 
     <div class="nav">
@@ -192,6 +218,7 @@ useHead({ script: [ldScript(webPageLd({ url: `${config.site.url}/cards`, name: "
 .bh abbr { font-size: 18px; font-weight: 400; color: var(--mu); margin-left: 8px; text-decoration: none; }
 .senses { margin: 0; padding-left: 28px; font-size: clamp(20px, 2.6vw, 26px); line-height: 1.35; letter-spacing: -.01em; list-style: decimal; }
 .senses li + li { margin-top: 12px; }
+.rate { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
 .cq { margin: 20px 0 0; padding-left: 16px; border-left: 2px solid var(--ln); font-size: 18px; line-height: 1.5; color: var(--mu); }
 .cq p { margin: 0; }
 .senses li::marker { color: var(--ac); font-size: 16px; font-weight: 700; }

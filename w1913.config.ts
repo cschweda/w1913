@@ -203,7 +203,7 @@ export const config = {
   // before the cards page); otherwise the entry for that word owns the URL.
   // DO NOT REMOVE a word once its page is live: links to /w/<word> would move.
   // ---------------------------------------------------------------------------
-  reservedWords: ["search", "author", "label", "synonyms", "check", "cards", "about", "data", "w"],
+  reservedWords: ["search", "author", "label", "synonyms", "check", "cards", "about", "data", "w", "saved"],
 
   // ---------------------------------------------------------------------------
   // Caching of pages and lookups by browsers and nginx, in seconds.

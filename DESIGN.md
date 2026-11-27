@@ -353,7 +353,7 @@ More play than tool, but reading a dictionary is how many writers find words, an
   - *By author*: words quoted from one author (`/cards?deck=author:milton`), each card with that author's quotation. Shipped in v0.10.0. Cards also show a quotation of at most 220 characters on the back, only when the word is shown first (it usually contains the word).
 - **`card_ok`.** A uniform draw from every headword is mostly variant spellings, bare cross-references, and species names. An entry is `card_ok` when it has at least one definition that is not only a cross-reference and is at least 40 characters long. Once labels exist (data 0.4), entries whose only senses carry natural-science subject labels are excluded from the random deck; they remain available as label decks. The thresholds are starting values; the count of `card_ok` entries goes in `report.json`.
 - **Reverse mode:** show the definition first and reveal the word. It practises "what's the word for…".
-- **Self-rating:** two buttons on the back, "Knew it" and "New to me". "New to me" adds the word to the saved list. There is no scheduling and no score.
+- **Self-rating:** two buttons on the back, "Knew it" and "New to me". "New to me" adds the word to the saved list. There is no scheduling and no score. Shipped in v0.11.0, with the Saved deck (up to 20 saved words at random).
 - **Keys:** Space or Enter flips; left and right arrows move through the deck. Every key has an on-screen button.
 - A deck is 20 cards. Deck state lives in the browser; the server only returns the entries for a deck.
 
@@ -366,7 +366,7 @@ More play than tool, but reading a dictionary is how many writers find words, an
 
 ### Keeping
 
-- **Saved words and lists** in `localStorage` (try/catch), export/import as JSON.
+- **Saved words and lists** in `localStorage` (try/catch), export/import as JSON. Saved words shipped in v0.11.0: a Save toggle on each entry (`aria-pressed`, with a status message), `/saved` (footer link) with remove, remove all (confirmed in place), export and import (a `w1913-saved` JSON file; invalid entries are skipped and counted; at most 5,000 words). Named lists are not built yet.
 - **Copy with citation**, plain text and Markdown.
 
 ### Deferred

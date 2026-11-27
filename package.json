@@ -1,6 +1,6 @@
 {
   "name": "w1913",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "private": true,
   "description": "A writer's tool built on Webster's Revised Unabridged Dictionary (1913).",
   "license": "MIT",

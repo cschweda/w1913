@@ -2,7 +2,7 @@
 // Settings come from w1913.config.ts at the repository root; change them there.
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import config from "../../w1913.config.ts";
 
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
@@ -61,4 +61,37 @@ export default defineNuxtConfig({
   },
   devServer: { port: config.server.devPort },
   typescript: { strict: true },
+  hooks: {
+    // Browser bundle: libraries in their own chunks (Vue; Nuxt UI and reka-ui;
+    // the rest), so a release that changes only the site's code leaves them
+    // cached, and no chunk passes 500 kB. Client build only.
+    "vite:extendConfig"(viteConfig, { isClient }) {
+      if (!isClient) return;
+      const vc = viteConfig as { build?: Record<string, unknown> };
+      const build = (vc.build ??= {});
+      build.rolldownOptions = {
+        ...(build.rolldownOptions as object),
+        output: {
+          codeSplitting: {
+            groups: [
+              { name: "vue", test: /node_modules[\\/](?:@vue|vue|vue-router)[\\/]/, priority: 30 },
+              { name: "ui", test: /node_modules[\\/](?:reka-ui|@nuxt[\\/]ui|@floating-ui|@internationalized|@tanstack|tailwind-variants|@vueuse)[\\/]/, priority: 20 },
+              { name: "vendor", test: /node_modules[\\/]/, priority: 10 },
+            ],
+          },
+        },
+      };
+    },
+    // PM2 shows the version in the server's package.json, which Nitro writes
+    // as 0.0.0; give it the W1913 version.
+    "nitro:init"(nitro) {
+      nitro.hooks.hook("compiled", () => {
+        const file = resolve(nitro.options.output.serverDir, "package.json");
+        if (!existsSync(file)) return;
+        const pkg = JSON.parse(readFileSync(file, "utf8")) as { version?: string };
+        pkg.version = version;
+        writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
+      });
+    },
+  },
 });

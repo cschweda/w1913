@@ -157,6 +157,8 @@ export const Manifest = z
     jsonl: z.object({ file: z.string(), sha256: z.string().regex(/^[0-9a-f]{64}$/), bytes: z.number().int() }),
     /** The label vocabulary, from data 0.4: code, name, kind, printed forms. */
     vocabulary: z.object({ file: z.string(), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).optional(),
+    /** Reviewed corrections applied to the source before parsing (packages/data/corrections.json). */
+    corrections: z.object({ file: z.string(), count: z.number().int(), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).optional(),
     /** The author table, from data 0.6: key, name, kind, printed forms. */
     authors: z.object({ file: z.string(), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).optional(),
     licence: z.literal("CC0-1.0"),

@@ -13,6 +13,7 @@ interface Entry {
   pos_title: string | null; sense_count: number; meta_html: string; body_html: string;
 }
 interface Page {
+  labels: { code: string; name: string }[];
   slug: string; headword: string; entries: Entry[];
   neighbors: { slug: string; headword: string; current: boolean }[];
   backlinks: { slug: string; headword: string }[];
@@ -112,7 +113,15 @@ useHead({
         <h1 class="hw" :style="fit(page.headword)">{{ page.headword }}</h1>
         <p v-if="fromForm" class="from" role="note"><i>{{ fromForm }}</i> is a form of <b>{{ page.headword }}</b>.</p>
         <div aria-hidden="true" class="bar" />
-        <SayIt :word="page.headword" />
+        <div class="tools">
+          <SayIt :word="page.headword" />
+          <SaveButton :slug="page.slug" :headword="page.headword" />
+          <CiteButton :slug="page.slug" :headword="page.headword" :path="entryPath(page.slug)" />
+        </div>
+        <p v-if="page.labels.length" class="m here">
+          <span class="cap">Labels here</span>
+          <NuxtLink v-for="l in page.labels" :key="l.code" :to="`/label/${l.code}`" class="chip">{{ l.name }}</NuxtLink>
+        </p>
         <p v-if="page.entries.length > 1" class="m count">{{ page.entries.length }} entries</p>
         <section v-for="e in page.entries" :id="e.anchor" :key="e.id" class="sec" :aria-labelledby="`${e.anchor}-h`">
           <h2 :id="`${e.anchor}-h`" class="hh" :style="fit(shownMarked(e.headword_marked, e.headword))">
@@ -177,6 +186,10 @@ useHead({
 </template>
 
 <style scoped>
+.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 16px; }
+.tools :deep(.say) { margin: 0; }
+.here { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 0; margin-top: 16px; }
+.here .cap { margin-right: 10px; }
 .from { margin: 12px 0 0; font-size: 18px; color: var(--mu); }
 .from b { color: var(--fg); }
 .lookup { margin: 0 0 40px; }

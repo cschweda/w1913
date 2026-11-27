@@ -42,7 +42,10 @@ export default defineEventHandler((event) => {
     )
     .all(slug, slug) as { id: number; slug: string; headword: string; anchor: string; html: string }[];
   setHeader(event, "cache-control", `public, max-age=${config.cache.entrySeconds}`);
+  // Labels here (DESIGN.md §4a modules; data 0.4): every label on the page's senses.
+  const labels = db.prepare("SELECT l.code, l.name FROM page_labels pl JOIN labels l ON l.code = pl.code WHERE pl.slug = ? ORDER BY l.kind DESC, l.pages DESC").all(slug) as { code: string; name: string }[];
   return {
+    labels,
     slug: page.slug,
     headword: page.headword,
     entries,

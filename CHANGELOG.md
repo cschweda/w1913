@@ -17,6 +17,35 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-27
+
+Phase 6, "Keeping", and three smaller items.
+
+### Added
+
+- **Saved words:** a Save toggle on every entry; `/saved` (linked in the footer) lists them with
+  remove, remove all (confirmed in place), export and import as a JSON file. Kept in the browser
+  only (`localStorage`), never sent anywhere; at most 5,000 words. Import skips and counts
+  anything that is not a saved word.
+- **Cards:** a Saved deck, and "Knew it" / "New to me" on the back of every card ("New to me"
+  saves the word). No score, no scheduling.
+- **Copy with citation** on every entry: the sense in the address (`#a-4`) or the first sense,
+  labels as printed ("[Poetic]"), quotations left out, then "— Webster's Revised Unabridged
+  Dictionary (1913)" and the sense's address.
+- **Labels here:** every label on the page's senses as chips under the headword.
+- **Corrections workflow:** `packages/data/corrections.json` (empty for now) with its rules in
+  `packages/data/src/corrections/README.md`. A correction fixes one typo on one source line, must
+  match exactly once, and must name the printed page it was checked against; the build applies
+  corrections before parsing and records them in each manifest.
+
+### Changed
+
+- **The browser bundle is split** into Vue, Nuxt UI and other-library chunks (largest 363 kB,
+  was 502 kB), so a release that changes only the site's code leaves the libraries cached.
+- **PM2 shows the real version** (it showed 0.0.0): the build writes it into the server's
+  `package.json`.
+- `saved` is a reserved route word.
+
 ## [0.10.0] - 2026-11-27
 
 Phase 5, "How did the masters use it?". Data 0.6 (parser 0.5.0) adds the `quotes` layer.
@@ -345,7 +374,8 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/cschweda/w1913/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/cschweda/w1913/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/cschweda/w1913/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/cschweda/w1913/compare/v0.7.2...v0.8.0

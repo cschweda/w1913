@@ -7,6 +7,7 @@ import path from "node:path";
 import { canonicalFile, editionsDir } from "../paths.ts";
 import { sha256Bytes, sha256File } from "../source/checksum.ts";
 import { loadCanonical } from "../source/load.ts";
+import { applyCorrections, loadCorrections } from "../corrections/apply.ts";
 import { slice, type SliceName } from "../audit/slices.ts";
 import { segment } from "../segment/segment.ts";
 import { EditionEntry, Manifest, type Layer } from "./schema.ts";
@@ -48,13 +49,14 @@ function releaseDir(spec: ReleaseSpec): string {
   return path.join(editionsDir, `w1913-${spec.version}`);
 }
 
-async function reusable(dir: string, spec: ReleaseSpec, sourceSha: string): Promise<Manifest | null> {
+async function reusable(dir: string, spec: ReleaseSpec, sourceSha: string, correctionsSha: string): Promise<Manifest | null> {
   const file = path.join(dir, "manifest.json");
   if (!existsSync(file)) return null;
   const m = Manifest.safeParse(JSON.parse(await readFile(file, "utf8")));
   if (!m.success) return null;
   const same =
     m.data.source.sha256 === sourceSha &&
+    (m.data.corrections?.sha256 ?? "") === correctionsSha &&
     m.data.parserVersion === PARSER_VERSION &&
     JSON.stringify(m.data.layers) === JSON.stringify(spec.layers) &&
     JSON.stringify(m.data.scope) === JSON.stringify(spec.scope);
@@ -67,14 +69,18 @@ async function reusable(dir: string, spec: ReleaseSpec, sourceSha: string): Prom
 export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } = {}): Promise<BuildResult> {
   const t0 = performance.now();
   const sourceSha = await sha256File(canonicalFile);
+  const corrections = loadCorrections();
+  const correctionsSha = sha256Bytes(corrections.raw);
   const dir = releaseDir(spec);
   if (!opts.force) {
-    const m = await reusable(dir, spec, sourceSha);
+    const m = await reusable(dir, spec, sourceSha, correctionsSha);
     if (m) return { dir, manifest: m, reused: true, ms: performance.now() - t0 };
   }
 
   const canonical = await loadCanonical();
-  const { entries: raw } = segment(canonical.lines, canonical.firstLineNumber);
+  // Reviewed corrections (corrections.json) apply to the source lines before anything is parsed.
+  const lines0 = applyCorrections(canonical.lines, canonical.firstLineNumber, corrections.list);
+  const { entries: raw } = segment(lines0, canonical.firstLineNumber);
   const segmentLayer = toSegmentEntries(raw);
   const resolve = spec.layers.includes("senses") ? makeResolver(segmentLayer) : null;
   const withSenses = resolve ? segmentLayer.map((e, i) => toSensesEntry(e, raw[i]!, resolve)) : segmentLayer;
@@ -107,6 +113,7 @@ export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } 
     scope: spec.scope,
     entries: chosen.length,
     source: { file: "29765.txt", sha256: sourceSha },
+    corrections: { file: "corrections.json", count: corrections.list.length, sha256: correctionsSha },
     parserVersion: PARSER_VERSION,
     jsonl: { file: jsonlName, sha256: sha256Bytes(body), bytes: Buffer.byteLength(body) },
     ...(vocabulary ? { vocabulary: { file: "labels.json", sha256: sha256Bytes(vocabulary) } } : {}),
