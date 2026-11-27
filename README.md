@@ -1,7 +1,7 @@
 ![w1913.com: W for Webster's, 1913 for the Revised Unabridged edition. A dictionary for writers.](assets/og-image.png)
 
 [![Live: w1913.com](https://img.shields.io/badge/live-w1913.com-c8102e.svg)](https://w1913.com)
-[![Version 0.17.0](https://img.shields.io/badge/version-0.17.0-111111.svg)](CHANGELOG.md)
+[![Version 0.17.1](https://img.shields.io/badge/version-0.17.1-111111.svg)](CHANGELOG.md)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-111111.svg)](LICENSE)
 [![Data: CC0 1.0](https://img.shields.io/badge/data-CC0%201.0-111111.svg)](LICENSE-DATA)
 [![Node 24](https://img.shields.io/badge/node-24-111111.svg)](.nvmrc)
@@ -113,7 +113,7 @@ cd ~/w1913.com          # the checkout
 ./rebuild.sh --rollback # back to the previous release
 ```
 
-Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.17.0 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
+Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.17.1 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
 
 ## Licence
 

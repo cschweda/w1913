@@ -17,6 +17,10 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-11-27
+
+The first release deployed by pushing its tag.
+
 ### Added
 
 - **Deploy on release tags**: `.github/workflows/deploy.yml`. Pushing `vX.Y.Z` runs lint,
