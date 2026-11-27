@@ -13,14 +13,46 @@ useHead({ script: [ldScript(webPageLd({ type: "AboutPage", url: `${config.site.u
     <h1 class="title">About</h1>
     <div aria-hidden="true" class="bar" />
     <p>
-      W1913 is a writer's tool built on <i>Webster's Revised Unabridged Dictionary</i> (1913, ed. Noah Porter), the
-      last great American dictionary before modern lexicography trimmed its quotations and its essays on how
-      near-synonyms differ.
+      W1913 is a writer's tool built on <i>Webster's Revised Unabridged Dictionary</i> (1913, ed. Noah Porter): a
+      dictionary from before modern lexicography trimmed its quotations and its essays on how near-synonyms differ.
     </p>
+
+    <h2>What the 1913 Webster's is</h2>
+    <p>
+      It descends from Noah Webster's <i>American Dictionary of the English Language</i> of 1828, which the Merriam
+      brothers bought and kept revising after Webster's death. The edition known as "Webster's 1913" is largely the
+      text of the 1890 <i>Webster's International Dictionary</i>, edited by Noah Porter, a former president of Yale,
+      with a supplement of newer words. Merriam had already replaced it with the larger <i>New International</i> of
+      1909, but this is the version that is out of copyright, and so the one that was typed into a computer and
+      shared freely.
+    </p>
+
+    <h2>Why writers like it</h2>
+    <p>
+      Its definitions are written to be read, not just consulted. Where a modern dictionary says what a word means,
+      the 1913 Webster's often shows how it feels: <NuxtLink to="/sublime" class="x">sublime</NuxtLink> is "lifted
+      up; high in place; exalted aloft". It quotes Shakespeare, Milton, Dryden, and the Bible to show words in use,
+      and it carries more than six hundred short essays on how near-synonyms differ, such as
+      <NuxtLink to="/synonyms/compare?w=abandon,desert,forsake" class="x">abandon, desert, and forsake</NuxtLink>.
+      Its vocabulary reaches back into the poetic, the obsolete, and the trades. James Somers's 2014 essay "You're
+      probably using the wrong dictionary" made the case for it to a new generation of writers.
+    </p>
+
+    <h2>What it isn't</h2>
+    <p>
+      It is not the <i>Oxford English Dictionary</i>. The OED is a historical dictionary: it traces each sense of a
+      word from its first recorded use with dated quotations, and it is far larger and still being revised. Nor is
+      it a modern dictionary. It has no words coined after about 1910 (no <i>petrichor</i>, no <i>radio</i> in its
+      modern sense), its science and medicine are a century out of date, its usage notes describe the English of
+      its time, and some definitions reflect that time's attitudes. In this transcription its pronunciations and its
+      Greek are mostly lost. Use it for the texture and history of a word; check a current dictionary for what a
+      word means today.
+    </p>
+
     <h2>The text</h2>
     <p>
       Every word comes from <a :href="config.site.source.url" class="x">{{ config.site.source.name }}</a>, which Project Gutenberg catalogues as public domain in the
-      USA. Its Greek and some symbols were never transcribed; where they were, the dictionary shows the gap rather than
+      USA. Its Greek and some symbols were never transcribed; where they are missing, the dictionary shows the gap rather than
       guessing. Typos are corrected only after a person checks them against the printed page.
     </p>
     <h2>Licence</h2>

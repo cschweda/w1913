@@ -17,6 +17,21 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-27
+
+### Added
+
+- About: what the 1913 Webster's is (its descent from Webster's 1828 dictionary through the
+  Merriam revisions and Porter's 1890 *International*, and why this version is the free one), why
+  writers like it (definitions written to be read, literary quotations, 600+ synonym essays), and
+  what it isn't (not the historical OED, not a modern dictionary: no words after about 1910, dated
+  science and attitudes, pronunciations and Greek mostly lost in this transcription).
+
+### Fixed
+
+- About: a garbled phrase in "The text" ("where they were" → "where they are missing"), and a
+  sweeping opening claim softened.
+
 ## [0.7.0] - 2026-11-27
 
 ### Added
@@ -235,7 +250,8 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/cschweda/w1913/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/cschweda/w1913/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/cschweda/w1913/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/cschweda/w1913/compare/v0.6.0...v0.6.1
