@@ -169,6 +169,7 @@ The plain text keeps syllables and stress but lost its vowel marks (§2 problem 
 - It never enters the edition or its layers; the edition stays derived from #29765 alone.
 - `apps/site/scripts/cmu-subset.ts` cuts the pinned `cmudict.dict` (SHA-256 checked) to the words W1913 has: 31,995 words, 1 MB, committed as `apps/site/data/cmudict-w1913.txt`, so deploys fetch nothing.
 - It is modern American and says so on every use, with a link to the About page's account of it.
+- **Rhymes (v0.17.0)** use the same pronunciation: two words rhyme when their phones match from the last primary-stressed vowel to the end (`shared/rhymes.ts`). An entry CMU lacks gets **spelling** matches instead: the letters from the 1913's own stressed vowel to the end (*yaffle*: *baffle, raffle, snaffle*), always labelled "may not rhyme". 24,299 pages rhyme by sound and 67,144 more by spelling. Each entry page has a Rhymes section, grouped by syllable count, with a group per pronunciation when homographs differ (*minute*); `/search?rhyme=<word>` lists them all with the rhythm filter.
 - **Rule:** an entry shows it only when CMU has the headword and agrees with the 1913 on syllable count and primary stress (so *RE-cord*, n., and *re-CORD*, v., each get their own); for one syllable, which the 1913 leaves unmarked, only a word CMU says one way (*time*, never *lead* or *wind*). Otherwise nothing is shown rather than a guess. 35,386 entries have one; most of the 1913's rarer words do not (CMU covers 28% of single-word pages).
 
 ---

@@ -20,6 +20,8 @@ import { makeLabeler, type Label } from "../shared/labels.ts";
 import { definitionFrequency, unusualSpans } from "../shared/unusual.ts";
 import { cardSenses, isCardOk } from "../shared/cards.ts";
 import { agreeing, parseCmu, respell } from "../shared/sounds.ts";
+import { soundKey, spellingKey } from "../shared/rhymes.ts";
+import { prosodyOf } from "../shared/prosody.ts";
 import { entryPath } from "../shared/fold.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -63,15 +65,28 @@ type Entry = RenderableEntry & {
 const cmuFile = path.join(here, "../data/cmudict-w1913.txt");
 const cmu = existsSync(cmuFile) ? parseCmu(readFileSync(cmuFile, "utf8")) : new Map();
 let soundsCount = 0;
-/** The sound-it-out spelling of an entry's headword, when CMU has it and agrees with the 1913's stress. */
-const soundsOf = (e: Entry) => {
+/** The CMU pronunciation of an entry's headword, when CMU has it and agrees with the 1913's stress. */
+const pronOf = (e: Entry) => {
   const w = e.headword.toLowerCase();
-  if (!/^[a-z']+$/.test(w)) return null;
-  const p = agreeing(cmu.get(w), e.prosody?.stress ?? null);
+  return /^[a-z']+$/.test(w) ? agreeing(cmu.get(w), e.prosody?.stress ?? null) : null;
+};
+/** The sound-it-out spelling ("suh-BLYME"). */
+const soundsOf = (e: Entry) => {
+  const p = pronOf(e);
   if (!p) return null;
   soundsCount++;
   return respell(p);
 };
+// Rhymes (v0.17.0; shared/rhymes.ts): an entry's sound key (CMU) and spelling key (the 1913's stress).
+const rhymeKeyOf = (e: Entry) => { const p = pronOf(e); return p ? soundKey(p) : null; };
+/** Syllables for ordering rhymes: the 1913's count, else CMU's, else 1 for an unmarked one-vowel-group word ("Time"). */
+const rhymeSylOf = (e: Entry) => {
+  if (e.prosody) return e.prosody.syllables;
+  const p = pronOf(e);
+  if (p) return p.filter((x) => /\d$/.test(x)).length;
+  return spellingKey(null, e.headword) ? 1 : null;
+};
+const spellKeyOf = (e: Entry) => (/^[\p{L}'’]+$/u.test(e.headword) ? spellingKey(prosodyOf(e.marked), e.headword) : null);
 
 const t0 = performance.now();
 const entries: Entry[] = [];
@@ -111,7 +126,7 @@ db.exec(`
   CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   CREATE TABLE entries (
     id TEXT PRIMARY KEY, slug TEXT NOT NULL, ord INTEGER NOT NULL, homograph_no INTEGER NOT NULL,
-    anchor TEXT NOT NULL, headword TEXT NOT NULL, headword_marked TEXT, syllables INTEGER, stress TEXT, pos TEXT, pos_title TEXT, sounds TEXT,
+    anchor TEXT NOT NULL, headword TEXT NOT NULL, headword_marked TEXT, syllables INTEGER, stress TEXT, pos TEXT, pos_title TEXT, sounds TEXT, rhyme_key TEXT, spell_key TEXT, rhyme_syl INTEGER,
     letter TEXT NOT NULL, sense_count INTEGER NOT NULL, meta_html TEXT NOT NULL, body_html TEXT NOT NULL,
     text TEXT NOT NULL, summary TEXT NOT NULL, first_sense TEXT NOT NULL,
     card_ok INTEGER NOT NULL, card_json TEXT NOT NULL
@@ -131,7 +146,7 @@ db.exec(`
   CREATE TABLE phrases (fold TEXT NOT NULL, phrase TEXT NOT NULL, slug TEXT NOT NULL, anchor TEXT NOT NULL, ord INTEGER NOT NULL);
   CREATE TABLE backlinks (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
 `);
-const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@syllables,@stress,@pos,@pos_title,@sounds,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense,@card_ok,@card_json)`);
+const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@syllables,@stress,@pos,@pos_title,@sounds,@rhyme_key,@spell_key,@rhyme_syl,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense,@card_ok,@card_json)`);
 let cardOk = 0;
 /** Rule (DESIGN.md §4): every sense carries a natural-science subject label. */
 const onlyNaturalScience = (e: Entry) =>
@@ -223,7 +238,7 @@ db.transaction(() => {
     const anchor = anchorOf.get(e.id)!;
     insEntry.run({
       id: e.id, slug, ord: e.ord, homograph_no: Number(e.id.match(/-(\d+)$/)![1]), anchor,
-      headword: e.headword, headword_marked: e.marked, sounds: soundsOf(e), syllables: e.prosody?.syllables ?? null, stress: e.prosody?.stress ?? null, pos: e.pos, pos_title: e.pos ? posTitle(e.pos) : null,
+      headword: e.headword, headword_marked: e.marked, sounds: soundsOf(e), rhyme_key: rhymeKeyOf(e), spell_key: spellKeyOf(e), rhyme_syl: rhymeSylOf(e), syllables: e.prosody?.syllables ?? null, stress: e.prosody?.stress ?? null, pos: e.pos, pos_title: e.pos ? posTitle(e.pos) : null,
       letter: (foldForCompare(e.headword)[0] ?? "#").toUpperCase(),
       sense_count: e.senses.filter((s) => s.n !== null).length,
       meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor, unusualFor(e), slug), text: e.text, summary: summaryOf(e), first_sense: firstSenseOf(e),
@@ -350,6 +365,8 @@ db.exec(`
   CREATE INDEX pages_rank ON pages (rank);
   CREATE INDEX forms_fold ON forms (fold, ord);
   CREATE INDEX phrases_fold ON phrases (fold, ord);
+  CREATE INDEX entries_rhyme ON entries (rhyme_key);
+  CREATE INDEX entries_spell ON entries (spell_key);
   CREATE INDEX backlinks_slug ON backlinks (slug, from_ord);
   CREATE INDEX syn_listed_slug ON syn_listed (slug, from_ord);
   CREATE INDEX essay_pages_slug ON essay_pages (slug);

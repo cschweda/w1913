@@ -18,6 +18,7 @@ interface Page {
   neighbors: { slug: string; headword: string; current: boolean }[];
   backlinks: { slug: string; headword: string }[];
   listedUnder: { slug: string; headword: string }[];
+  rhymes: { kind: "sound" | "spelling"; labelled: boolean; pos: string[]; sounds: string | null; total: number; words: { slug: string; headword: string; syllables: number | null }[] }[];
   essaysElsewhere: { id: number; slug: string; headword: string; anchor: string; html: string }[];
 }
 
@@ -55,6 +56,16 @@ const fromForm = computed(() => {
 function shownMarked(m: string | null, fallback: string) {
   if (!m) return fallback;
   return m.replace(/\*/g, "·").replace(/"/g, "″").replace(/`/g, "′");
+}
+/** Rhymes grouped by syllable count ("1 syllable", "2 syllables"; unknown last). */
+function bySyllables(words: { slug: string; headword: string; syllables: number | null }[]) {
+  const out: { label: string; words: typeof words }[] = [];
+  for (const w of words) {
+    const label = w.syllables ? `${w.syllables} ${w.syllables === 1 ? "syllable" : "syllables"}` : "Other";
+    const g = out.find((x) => x.label === label);
+    if (g) g.words.push(w); else out.push({ label, words: [w] });
+  }
+  return out;
 }
 // "On this page": each homograph, and its Phrases list when it has one (data 0.7).
 const sections = computed(() =>
@@ -150,6 +161,27 @@ useHead({
           <div v-html="e.body_html" />
         </section>
 
+        <section v-if="page.rhymes.length" id="rhymes" class="sec more" aria-labelledby="rhymes-h">
+          <h2 id="rhymes-h" class="hh small">Rhymes</h2>
+          <div v-for="(g, i) in page.rhymes" :key="i" class="rgrp">
+            <p v-if="g.kind === 'sound'" class="m">
+              <template v-if="g.labelled"><b>{{ g.pos.join(", ") || page.headword }}</b><template v-if="g.sounds">, {{ g.sounds }}</template>: </template>
+              {{ g.total.toLocaleString("en-US") }} {{ g.total === 1 ? "word" : "words" }} in this dictionary that rhyme in modern American pronunciation (<NuxtLink to="/about#sounds" class="x">CMU</NuxtLink>).
+            </p>
+            <p v-else class="m">
+              <b>By spelling; these may not rhyme.</b> The pronunciation dictionary lacks {{ page.headword }}, so these are the
+              {{ g.total.toLocaleString("en-US") }} {{ g.total === 1 ? "word" : "words" }} spelled the same from the 1913's stressed vowel on.
+            </p>
+            <dl class="rg">
+              <div v-for="grp in bySyllables(g.words)" :key="grp.label">
+                <dt class="cap">{{ grp.label }}</dt>
+                <dd><ul class="back"><li v-for="w in grp.words" :key="w.slug"><NuxtLink :to="entryPath(w.slug)" class="x">{{ w.headword }}</NuxtLink></li></ul></dd>
+              </div>
+            </dl>
+          </div>
+          <p class="cmp"><NuxtLink :to="`/search?rhyme=${page.slug}`" class="t x">{{ page.rhymes.some((g) => g.total > g.words.length) ? "All the rhymes, filtered by rhythm →" : "Filter these by rhythm →" }}</NuxtLink></p>
+        </section>
+
         <section v-if="page.essaysElsewhere.length" class="sec more" aria-labelledby="else-h">
           <h2 id="else-h" class="hh small">Essays that discuss {{ page.headword }}</h2>
           <p class="m">Printed under other entries, on how near-synonyms differ.</p>
@@ -223,6 +255,13 @@ useHead({
 .pros-text { font-size: 14px; color: var(--mu); }
 .sl { color: var(--fg); font-weight: 700; letter-spacing: .02em; }
 .more { margin-top: 56px; }
+.rgrp + .rgrp { margin-top: 24px; }
+.rg { margin: 12px 0 0; }
+.rg > div + div { margin-top: 10px; }
+.rg dt { margin: 0; }
+.rg dd { margin: 0; }
+.rg .back { margin-top: 4px; }
+.cmp { margin: 12px 0 0; font-size: 15px; }
 .small { font-size: 22px; }
 .n { font-size: 15px; font-weight: 400; color: var(--mu); margin-left: 8px; }
 .back { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 18px; line-height: 1.8; }

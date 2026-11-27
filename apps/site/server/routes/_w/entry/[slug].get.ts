@@ -1,6 +1,7 @@
 // One page's worth of entries (all homographs of a slug) plus its neighbors.
 import config from "../../../../../../w1913.config.ts";
 import { didYouMean, lookupWord, phraseOf } from "../../../utils/lookup";
+import { rhymeGroups } from "../../../../shared/search";
 
 interface Row {
   id: string; anchor: string; headword: string; headword_marked: string | null; pos: string | null;
@@ -49,6 +50,8 @@ export default defineEventHandler((event) => {
   const labels = db.prepare("SELECT l.code, l.name FROM page_labels pl JOIN labels l ON l.code = pl.code WHERE pl.slug = ? ORDER BY l.kind DESC, l.pages DESC").all(slug) as { code: string; name: string }[];
   return {
     labels,
+    // Rhymes (v0.17.0): by sound where CMU has the word, else by spelling (shared/rhymes.ts).
+    rhymes: rhymeGroups(db, slug),
     slug: page.slug,
     headword: page.headword,
     entries,

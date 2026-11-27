@@ -17,6 +17,29 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-27
+
+Rhymes, like Synonyms.
+
+### Added
+
+- **A Rhymes section on every entry** that has rhymes, grouped by syllable count, fewer
+  syllables first: *time* → *chime, climb, crime, … sublime*; *night* → 56, from *bight* to
+  *outright*. Exact rhymes come from the CMU Pronouncing Dictionary (modern American, as for
+  "Sounds like"), matching from the last stressed vowel to the end, so *indict* rhymes with
+  *night*. When homographs sound different, each pronunciation says which rhymes are its own
+  (*minute*, a., my-NOOT).
+- **Spelling rhymes for words CMU lacks**, from the 1913's own stress marks: *yaffle* →
+  *baffle, raffle, snaffle, waffle*. Always labelled **"By spelling; these may not rhyme."**
+- **Rhymes for a word** on the search page (`/search?rhyme=night`), with the rhythm filter:
+  "rhymes for *night*, two syllables" → *alight, delight, … tonight*.
+- 24,299 pages rhyme by sound and 67,144 more by spelling.
+
+### Changed
+
+- The rhythm filter's syllable count now includes one-syllable headwords the 1913 prints without
+  marks (*Time*, *Chime*), counted from CMU or from a single vowel group.
+
 ## [0.16.0] - 2026-11-27
 
 "Sounds like", a phone-sized header, and a WCAG 2.1 AA pass.

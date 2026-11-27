@@ -11,42 +11,45 @@ const route = useRoute();
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 const q = computed(() => str(route.query.q));
 const like = computed(() => str(route.query.like));
+const rhyme = computed(() => str(route.query.rhyme));
 const inQuotes = computed(() => route.query.in === "quotes");
 const authorQ = computed(() => str(route.query.author));
 const syl = computed(() => str(route.query.syl));
 const stress = computed(() => str(route.query.stress));
 const page = computed(() => Math.max(1, Number(route.query.page ?? 1) || 1));
 type QuoteHit = { slug: string; headword: string; anchor: string; author: string; authorKey: string; authorName: string; ref: string | null; snippet: string };
-const { data } = await useFetch<Results & { page: number; per: number; like: { slug: string; headword: string } | null; author?: { key: string; name: string } | null }>("/_w/search", {
-  query: { q, like, syl, stress, page, in: computed(() => (inQuotes.value ? "quotes" : undefined)), author: authorQ },
-  key: computed(() => `search-${q.value}-${like.value}-${syl.value}-${stress.value}-${page.value}-${inQuotes.value}-${authorQ.value}`),
+const { data } = await useFetch<Results & { page: number; per: number; like: { slug: string; headword: string } | null; rhyme?: { slug: string; headword: string } | null; kind?: "sound" | "spelling" | null; author?: { key: string; name: string } | null }>("/_w/search", {
+  query: { q, like, rhyme, syl, stress, page, in: computed(() => (inQuotes.value ? "quotes" : undefined)), author: authorQ },
+  key: computed(() => `search-${q.value}-${like.value}-${rhyme.value}-${syl.value}-${stress.value}-${page.value}-${inQuotes.value}-${authorQ.value}`),
 });
 const quoteHits = computed(() => (inQuotes.value ? (data.value?.hits as unknown as QuoteHit[]) : []));
-/** "Words in definitions", "Synonyms of a word" (the rhythm filter combines with both), or "Words in quotations". */
-const mode = ref<"defs" | "like" | "quotes">(inQuotes.value ? "quotes" : like.value ? "like" : "defs");
-const input = ref(like.value || q.value);
+/** "Words in definitions", "Synonyms of a word", "Rhymes for a word" (the rhythm filter combines with these), or "Words in quotations". */
+type Mode = "defs" | "like" | "rhyme" | "quotes";
+const modeOf = (): Mode => (inQuotes.value ? "quotes" : rhyme.value ? "rhyme" : like.value ? "like" : "defs");
+const mode = ref<Mode>(modeOf());
+const input = ref(rhyme.value || like.value || q.value);
 const sylIn = ref(syl.value);
 const stressIn = ref(stress.value);
-watch([q, like, syl, stress, inQuotes], () => { mode.value = inQuotes.value ? "quotes" : like.value ? "like" : "defs"; input.value = like.value || q.value; sylIn.value = syl.value; stressIn.value = stress.value; });
+watch([q, like, rhyme, syl, stress, inQuotes], () => { mode.value = modeOf(); input.value = rhyme.value || like.value || q.value; sylIn.value = syl.value; stressIn.value = stress.value; });
 const pages = computed(() => (data.value ? Math.ceil(data.value.total / data.value.per) : 0));
-const active = computed(() => !!(q.value || like.value));
+const active = computed(() => !!(q.value || like.value || rhyme.value));
 const ORD = ["first", "second", "third", "fourth", "fifth"];
 const rhythmText = computed(() => {
   const parts = [syl.value ? `${syl.value} syllable${syl.value === "1" ? "" : "s"}` : "", stress.value ? `stress on the ${ORD[Number(stress.value) - 1]}` : ""].filter(Boolean);
   return parts.length ? `, ${parts.join(", ")}` : "";
 });
 /** The query string for this result set on another page, keeping every filter. */
-const here = (extra: Record<string, string | number>) => ({ path: "/search", query: { ...(like.value ? { like: like.value } : { q: q.value }), ...(syl.value ? { syl: syl.value } : {}), ...(stress.value ? { stress: stress.value } : {}), ...(inQuotes.value ? { in: "quotes" } : {}), ...(authorQ.value ? { author: authorQ.value } : {}), ...extra } });
+const here = (extra: Record<string, string | number>) => ({ path: "/search", query: { ...(rhyme.value ? { rhyme: rhyme.value } : like.value ? { like: like.value } : { q: q.value }), ...(syl.value ? { syl: syl.value } : {}), ...(stress.value ? { stress: stress.value } : {}), ...(inQuotes.value ? { in: "quotes" } : {}), ...(authorQ.value ? { author: authorQ.value } : {}), ...extra } });
 const marked = (m: string | null, fallback: string) => (m ? m.replace(/\*/g, "·").replace(/"/g, "″").replace(/`/g, "′") : fallback);
 
 function submit() {
   const v = input.value.trim();
   if (!v) return;
   if (mode.value === "quotes") return navigateTo({ path: "/search", query: { q: v, in: "quotes", ...(authorQ.value ? { author: authorQ.value } : {}) } });
-  navigateTo({ path: "/search", query: { [mode.value === "like" ? "like" : "q"]: v, ...(sylIn.value ? { syl: sylIn.value } : {}), ...(stressIn.value ? { stress: stressIn.value } : {}) } });
+  navigateTo({ path: "/search", query: { [mode.value === "like" ? "like" : mode.value === "rhyme" ? "rhyme" : "q"]: v, ...(sylIn.value ? { syl: sylIn.value } : {}), ...(stressIn.value ? { stress: stressIn.value } : {}) } });
 }
 const description = "Search inside the definitions of the 1913 Webster's: find the word for a meaning, in the words the dictionary itself used.";
-useSeoMeta({ title: () => (like.value ? `Synonyms of “${like.value}”` : inQuotes.value && q.value ? `“${q.value}” in quotations` : q.value ? `“${q.value}” in definitions` : "Search definitions"), description, ogDescription: description, robots: () => (active.value ? "noindex" : "index") });
+useSeoMeta({ title: () => (rhyme.value ? `Rhymes for “${rhyme.value}”` : like.value ? `Synonyms of “${like.value}”` : inQuotes.value && q.value ? `“${q.value}” in quotations` : q.value ? `“${q.value}” in definitions` : "Search definitions"), description, ogDescription: description, robots: () => (active.value ? "noindex" : "index") });
 useHead({ script: [ldScript(webPageLd({ type: "SearchResultsPage", url: `${config.site.url}/search`, name: "Search definitions · W1913", description, modified: useRuntimeConfig().public.buildDate as string }), "ld-page")] });
 </script>
 
@@ -59,11 +62,12 @@ useHead({ script: [ldScript(webPageLd({ type: "SearchResultsPage", url: `${confi
         <legend class="vh">Search for</legend>
         <label><input v-model="mode" type="radio" value="defs" /> Words in definitions</label>
         <label><input v-model="mode" type="radio" value="like" /> Synonyms of a word</label>
+        <label><input v-model="mode" type="radio" value="rhyme" /> Rhymes for a word</label>
         <label><input v-model="mode" type="radio" value="quotes" /> Words in quotations</label>
       </fieldset>
-      <label for="defq" class="cap">{{ mode === "like" ? "Synonyms of" : mode === "quotes" ? "Search the quotations" : "Search inside definitions" }}</label>
+      <label for="defq" class="cap">{{ mode === "like" ? "Synonyms of" : mode === "rhyme" ? "Rhymes for" : mode === "quotes" ? "Search the quotations" : "Search inside definitions" }}</label>
       <div class="row">
-        <input id="defq" v-model="input" type="search" class="in" :placeholder="mode === 'like' ? 'lofty, sad, walk' : mode === 'quotes' ? 'sea, moonlight, &quot;to be or not&quot;' : 'walk idly, a young salmon, dread of water'" autocomplete="off" />
+        <input id="defq" v-model="input" type="search" class="in" :placeholder="mode === 'like' ? 'lofty, sad, walk' : mode === 'rhyme' ? 'time, night, sea' : mode === 'quotes' ? 'sea, moonlight, &quot;to be or not&quot;' : 'walk idly, a young salmon, dread of water'" autocomplete="off" />
         <button type="submit" class="btn go">Search</button>
       </div>
       <p v-if="mode === 'quotes' && data?.author" class="m">Only quotations from <NuxtLink :to="`/author/${data.author.key}`" class="x">{{ data.author.name }}</NuxtLink>. <NuxtLink :to="{ path: '/search', query: { q, in: 'quotes' } }" class="x">Search every author</NuxtLink></p>
@@ -79,6 +83,7 @@ useHead({ script: [ldScript(webPageLd({ type: "SearchResultsPage", url: `${confi
       </fieldset>
       <p class="m">
         <template v-if="mode === 'like'">The words the dictionary lists as synonyms of this one, and the entries that list it.</template>
+        <template v-else-if="mode === 'rhyme'">Words in this dictionary that rhyme in modern American pronunciation (the <NuxtLink to="/about#sounds" class="x">CMU</NuxtLink> pronouncing dictionary). For a word it lacks, words spelled alike from the stressed vowel on, which may not rhyme.</template>
         <template v-else-if="mode === 'quotes'">The 41,000 quotations the dictionary uses to show words in use, from Shakespeare, Milton, the Bible and 2,000 more. A few quotations are not recognised as such and are not searched.</template>
         <template v-else>Matches the words in the 1913 definitions (stemmed, so <i>walking</i> finds <i>walk</i>), not meanings: try the dictionary's own phrasing. Put a phrase in "double quotes".</template>
         <template v-if="mode !== 'quotes'">Rhythm comes from the dictionary's stress marks.</template>
@@ -90,6 +95,11 @@ useHead({ script: [ldScript(webPageLd({ type: "SearchResultsPage", url: `${confi
         <template v-if="inQuotes">
           <template v-if="data.total">{{ data.total.toLocaleString("en-US") }} {{ data.total === 1 ? "quotation" : "quotations" }} {{ data.broadened ? "contain any of" : "contain" }} “{{ q }}”<span v-if="data.broadened"> (none contain every word)</span>.</template>
           <template v-else>No quotation contains “{{ q }}”.</template>
+        </template>
+        <template v-else-if="rhyme">
+          <template v-if="data.rhyme && data.kind === 'spelling'">{{ data.total.toLocaleString("en-US") }} {{ data.total === 1 ? "word" : "words" }} spelled like <NuxtLink :to="entryPath(data.rhyme.slug)" class="x">{{ data.rhyme.headword }}</NuxtLink> from its stressed vowel{{ rhythmText }}. <b>By spelling: these may not rhyme.</b></template>
+          <template v-else-if="data.rhyme">{{ data.total.toLocaleString("en-US") }} {{ data.total === 1 ? "rhyme" : "rhymes" }} for <NuxtLink :to="entryPath(data.rhyme.slug)" class="x">{{ data.rhyme.headword }}</NuxtLink>{{ rhythmText }}.</template>
+          <template v-else>“{{ rhyme }}” is not in this dictionary.</template>
         </template>
         <template v-else-if="like">
           <template v-if="data.like">{{ data.total.toLocaleString("en-US") }} {{ data.total === 1 ? "synonym" : "synonyms" }} of <NuxtLink :to="entryPath(data.like.slug)" class="x">{{ data.like.headword }}</NuxtLink>{{ rhythmText }}.</template>

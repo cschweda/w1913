@@ -1,7 +1,7 @@
 ![w1913.com: W for Webster's, 1913 for the Revised Unabridged edition. A dictionary for writers.](assets/og-image.png)
 
 [![Live: w1913.com](https://img.shields.io/badge/live-w1913.com-c8102e.svg)](https://w1913.com)
-[![Version 0.16.0](https://img.shields.io/badge/version-0.16.0-111111.svg)](CHANGELOG.md)
+[![Version 0.17.0](https://img.shields.io/badge/version-0.17.0-111111.svg)](CHANGELOG.md)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-111111.svg)](LICENSE)
 [![Data: CC0 1.0](https://img.shields.io/badge/data-CC0%201.0-111111.svg)](LICENSE-DATA)
 [![Node 24](https://img.shields.io/badge/node-24-111111.svg)](.nvmrc)
@@ -35,6 +35,7 @@ The 1913 Webster's is loved for its discursive definitions, its literary quotati
 - **Words that point here**: the entries that say "See *X*", "Cf. *X*", or "Same as *X*".
 - **Synonyms**: each entry's synonym list with every word linked; the dictionary's **624 essays** on how near-synonyms differ, shown on every word they compare and collected at [/synonyms](https://w1913.com/synonyms); "Listed as a synonym under" for each word; and a side-by-side **compare** page ([abandon, desert, forsake](https://w1913.com/synonyms/compare?w=abandon,desert,forsake)).
 - **One-step lookup**: a large search field on every page, with suggestions as you type, `/` or Ctrl-K from anywhere, "did you mean" for a word not in the dictionary, and W1913 as a browser search engine.
+- **Rhymes**: on each entry, the words in the dictionary that rhyme with it, by syllable count (*night*: *bight, blight, … alight, delight, indict*), and [all of them filtered by rhythm](https://w1913.com/search?rhyme=night). Exact rhymes come from the CMU Pronouncing Dictionary (modern American); for a word it lacks, words spelled alike from the 1913's stressed vowel, labelled "may not rhyme".
 - **Saved words and lists**: Save on any entry, or "New to me" on a card; and **Lists** on any entry to gather words by purpose ("Chapter 3", "Sea words"), each list with its own card deck. Kept in your browser only, at [/saved](https://w1913.com/saved), with export and import as a JSON file.
 - **Copy with citation**: copies a sense with "Webster's Revised Unabridged Dictionary (1913)" and its address.
 - **Cards** ([/cards](https://w1913.com/cards)): a word at a time, from a random deck of 20, a deck for any label, author or search, your saved words or one of your lists, or the words you visited; "Knew it" and "New to me" on the back; flip for its senses and similar words, or show the definition first and guess the word. Space flips, arrows move.
@@ -112,7 +113,7 @@ cd ~/w1913.com          # the checkout
 ./rebuild.sh --rollback # back to the previous release
 ```
 
-Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.16.0 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
+Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.17.0 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
 
 ## Licence
 

@@ -18,7 +18,7 @@ function rhythmSql(col: string, r: Rhythm): { sql: string; args: number[] } {
   if (!r.syllables && !r.stress) return { sql: "", args: [] };
   const conds: string[] = [];
   const args: number[] = [];
-  if (r.syllables) { conds.push("x.syllables = ?"); args.push(r.syllables); }
+  if (r.syllables) { conds.push("coalesce(x.syllables, x.rhyme_syl) = ?"); args.push(r.syllables); }
   if (r.stress) { conds.push("substr(x.stress, ?, 1) = '1'"); args.push(r.stress); }
   return { sql: ` AND EXISTS (SELECT 1 FROM entries x WHERE x.slug = ${col} AND ${conds.join(" AND ")})`, args };
 }
@@ -123,4 +123,72 @@ export function searchQuotes(db: Database.Database, q: string, limit = 20, offse
   const all = run("all");
   if (all.total > 0 || !q.trim()) return { query: q, ...all, broadened: false };
   return { query: q, ...run("any"), broadened: true };
+}
+
+/** Rhymes (v0.17.0): by sound (CMU) or, for words CMU lacks, by spelling, which may not rhyme. */
+export type RhymeKind = "sound" | "spelling";
+export interface RhymeResults extends Results { kind: RhymeKind | null; hits: (Hit & { syllables: number | null })[] }
+
+/**
+ * Rule (shared/rhymes.ts): a page's rhymes are the other pages with an entry
+ * whose sound key equals one of this page's sound keys; when none of its
+ * entries has a sound key, those sharing a spelling key instead. Filtered by
+ * rhythm; fewer syllables first, then alphabetical.
+ */
+export function rhymesOf(db: Database.Database, slug: string, r: Rhythm = {}, limit = 30, offset = 0): RhymeResults {
+  const keys = (col: "rhyme_key" | "spell_key") =>
+    (db.prepare(`SELECT DISTINCT ${col} AS k FROM entries WHERE slug = ? AND ${col} IS NOT NULL`).all(slug) as { k: string }[]).map((x) => x.k);
+  let kind: RhymeKind = "sound";
+  let ks = keys("rhyme_key");
+  if (!ks.length) { kind = "spelling"; ks = keys("spell_key"); }
+  if (!ks.length) return { query: slug, total: 0, hits: [], broadened: false, kind: null };
+  const col = kind === "sound" ? "rhyme_key" : "spell_key";
+  const f = rhythmSql("m.slug", r);
+  const base = `FROM (SELECT slug, MIN(rhyme_syl) AS syllables FROM entries WHERE ${col} IN (${ks.map(() => "?").join(",")}) AND slug != ? GROUP BY slug) m JOIN pages p ON p.slug = m.slug WHERE 1${f.sql}`;
+  const total = (db.prepare(`SELECT count(*) AS n ${base}`).get(...ks, slug, ...f.args) as { n: number }).n;
+  const rows = db
+    .prepare(
+      `SELECT m.slug, p.headword, m.syllables,
+              (SELECT pos FROM entries e WHERE e.slug = m.slug ORDER BY ord LIMIT 1) AS pos,
+              (SELECT first_sense FROM entries e WHERE e.slug = m.slug ORDER BY ord LIMIT 1) AS first_sense,
+              (SELECT headword_marked FROM entries e WHERE e.slug = m.slug ORDER BY ord LIMIT 1) AS marked
+       ${base} ORDER BY coalesce(m.syllables, 99), lower(p.headword) LIMIT ? OFFSET ?`,
+    )
+    .all(...ks, slug, ...f.args, limit, offset) as { slug: string; headword: string; syllables: number | null; pos: string | null; first_sense: string; marked: string | null }[];
+  return { query: slug, total, broadened: false, kind, hits: rows.map((x) => ({ slug: x.slug, headword: x.headword, pos: x.pos, marked: x.marked, syllables: x.syllables, snippet: snippetHtml(x.first_sense) })) };
+}
+
+/** One group of rhymes on an entry page: the entries sharing a key, how they sound, and the first words. */
+/** `labelled`: the page's entries sound more than one way, so a group says which it is for. */
+export interface RhymeGroup { kind: RhymeKind; labelled: boolean; anchors: string[]; pos: string[]; sounds: string | null; total: number; words: { slug: string; headword: string; syllables: number | null }[] }
+
+/**
+ * The Rhymes section of a page (v0.17.0): one group per distinct sound key
+ * among its entries (*minute*, n., and *minute*, a., sound different), or,
+ * when none has one, per spelling key. At most `limit` words in each.
+ */
+export function rhymeGroups(db: Database.Database, slug: string, limit = 48): RhymeGroup[] {
+  const es = db.prepare("SELECT anchor, pos, sounds, rhyme_key, spell_key FROM entries WHERE slug = ? ORDER BY ord").all(slug) as { anchor: string; pos: string | null; sounds: string | null; rhyme_key: string | null; spell_key: string | null }[];
+  const kind: RhymeKind = es.some((e) => e.rhyme_key) ? "sound" : "spelling";
+  const col = kind === "sound" ? "rhyme_key" : "spell_key";
+  const groups = new Map<string, { anchors: string[]; pos: string[]; sounds: string | null }>();
+  for (const e of es) {
+    const k = e[col];
+    if (!k) continue;
+    const g = groups.get(k) ?? { anchors: [], pos: [], sounds: e.sounds };
+    g.anchors.push(e.anchor);
+    if (e.pos && !g.pos.includes(e.pos)) g.pos.push(e.pos);
+    groups.set(k, g);
+  }
+  const count = db.prepare(`SELECT count(DISTINCT slug) AS n FROM entries WHERE ${col} = ? AND slug != ?`);
+  const list = db.prepare(
+    `SELECT m.slug, p.headword, m.syllables FROM (SELECT slug, MIN(rhyme_syl) AS syllables FROM entries WHERE ${col} = ? AND slug != ? GROUP BY slug) m
+     JOIN pages p ON p.slug = m.slug ORDER BY coalesce(m.syllables, 99), lower(p.headword) LIMIT ?`,
+  );
+  const labelled = groups.size > 1;
+  return [...groups.entries()].map(([k, g]) => ({
+    kind, labelled, ...g,
+    total: (count.get(k, slug) as { n: number }).n,
+    words: list.all(k, slug, limit) as { slug: string; headword: string; syllables: number | null }[],
+  })).filter((g) => g.total > 0);
 }
