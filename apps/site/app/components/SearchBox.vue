@@ -95,7 +95,7 @@ const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl 
       ignore-filter
       :create-item="items.length ? false : { position: 'bottom', when: 'always' }"
       variant="none"
-      :placeholder="size === 'hero' ? '' : 'another word'"
+      :placeholder="size === 'hero' ? 'Enter word here' : 'another word'"
       class="field"
       :ui="{ root: 'w-full', base: inputClass, content: 'rounded-none border border-[var(--fg)] bg-[var(--bg)]', item: itemClass }"
       :reset-search-term-on-blur="false"
@@ -133,6 +133,9 @@ const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl 
 .is-hero :deep(input) { height: auto; padding-top: 4px; padding-bottom: 8px; font-size: clamp(40px, 8vw, 104px); font-weight: 700; letter-spacing: -.045em; line-height: 1.05; }
 .is-bar :deep(input) { height: 56px; font-size: clamp(22px, 3vw, 30px); font-weight: 700; letter-spacing: -.02em; }
 .box :deep(input::placeholder) { font-weight: 400; color: var(--mu); opacity: 1; }
+/* The home page's prompt is a whisper for first-time visitors: the label and hint
+   below carry the instructions, so it can sit far back. */
+.is-hero :deep(input::placeholder) { opacity: .28; }
 .hint { margin: 8px 0 0; font-size: 13px; color: var(--mu); }
 kbd { font: inherit; font-weight: 700; color: var(--fg); padding: 0 6px; border: 1px solid var(--mu); }
 </style>

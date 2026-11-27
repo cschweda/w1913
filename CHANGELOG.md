@@ -17,6 +17,13 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-11-27
+
+### Changed
+
+- The home page's lookup field shows a very faint "Enter word here" while it is empty, so a
+  first-time visitor sees where to type.
+
 ## [0.7.1] - 2026-11-27
 
 ### Added
