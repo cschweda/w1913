@@ -37,7 +37,7 @@ describe("pos", () => {
   });
 });
 
-const locate: Locate = (id) => (id === "grand-1" ? { path: "/grand", anchor: "a" } : null);
+const locate: Locate = (id) => (id === "grand-1" ? { path: "/grand", slug: "grand", anchor: "a" } : null);
 
 describe("render", () => {
   it("escapes everything from the source", () => {
@@ -151,5 +151,26 @@ describe("versioning", () => {
     const root = path.join(import.meta.dirname, "../../..");
     const { version } = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")) as { version: string };
     expect(readFileSync(path.join(root, "README.md"), "utf8")).toContain(`badge/version-${version}-`);
+  });
+});
+
+import { compareHref, essayHtml, synonymsHtml } from "./render.ts";
+
+describe("synonyms rendering", () => {
+  const loc: Locate = (id) => ({ "abandon-1": { path: "/abandon", slug: "abandon", anchor: "vt" }, "desert-1": { path: "/desert", slug: "desert", anchor: "n" }, "forsake-1": { path: "/forsake", slug: "forsake", anchor: "vt" } })[id] ?? null;
+  const essay = { compares: [{ text: "Abandon", id: "abandon-1" }, { text: "Desert", id: "desert-1" }, { text: "Forsake", id: "forsake-1" }], text: "These words agree.", xrefs: [] };
+  it("links listed words that resolve and leaves the others plain", () => {
+    const html = synonymsHtml({ words: [{ text: "To give up", lookup: "give up", id: null }, { text: "desert", lookup: "desert", id: "desert-1" }], note: null, essays: [], derived: [] }, loc, "vt");
+    expect(html).toContain('<li><span>To give up</span></li>');
+    expect(html).toContain('<li><a href="/desert#n" class="x">desert</a></li>');
+    expect(html).toContain('id="vt-syn"');
+  });
+  it("heads an essay with its compared words and a compare link", () => {
+    const html = essayHtml(essay, loc);
+    expect(html).toContain('<a href="/abandon#vt" class="x">Abandon</a>');
+    expect(html).toContain('href="/synonyms/compare?w=abandon,desert,forsake"');
+  });
+  it("offers no compare link with fewer than two resolved words", () => {
+    expect(compareHref([{ text: "Abandon", id: "abandon-1" }, { text: "Nowhere", id: null }], loc)).toBeNull();
   });
 });

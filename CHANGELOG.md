@@ -17,6 +17,28 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-27
+
+### Added
+
+- **Synonyms (Phase 2).** **Data 0.3** adds the `syn` layer: each Syn. section parsed into its
+  list (19,412 words, resolved to entries where they match), a note ("See Grand."), the essays on
+  how near-synonyms differ (624: 600 with a heading of compared words, 24 without), and run-in
+  derived forms set aside for the quotes layer. Parser version 0.2.0.
+- On every entry, a Synonyms block: the list with each word linked, the note, and the essays,
+  each headed by the words it compares and linking to a side-by-side comparison.
+- On every page: essays printed under other entries that compare this word, and "Listed as a
+  synonym under" (18,317 links reaching 6,426 pages).
+- `/synonyms`: all 624 essays, A to Z. `/synonyms/compare?w=a,b,c`: two or three words side by
+  side, with their first senses and the essays that compare them. "Synonyms" in the header.
+
+### Changed
+
+- Headwords never break inside a word: the size is fitted to the longest word in the headword
+  (container query units), so *Amenorrhoeal* shrinks to fit a phone instead of splitting.
+- Checked for WCAG 2.1/2.2 AA: no axe violations on any page type at desktop and mobile, and no
+  horizontal scrolling on any page type at 320, 390, 768, 1024 and 1440 px (reflow, 1.4.10).
+
 ## [0.3.2] - 2026-11-27
 
 ### Changed
@@ -139,7 +161,8 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/cschweda/w1913/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/cschweda/w1913/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/cschweda/w1913/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/cschweda/w1913/compare/v0.2.0...v0.3.0

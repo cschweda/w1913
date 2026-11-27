@@ -68,8 +68,30 @@ export const SensesFields = z.object({
 export const SensesEntry = SegmentEntry.extend(SensesFields.shape).strict();
 export type SensesEntry = z.infer<typeof SensesEntry>;
 
-/** Any edition line: the segment layer alone, or with the senses layer. */
-export const EditionEntry = z.union([SensesEntry, SegmentEntry]);
+const Linked = z.object({ text: z.string(), id: z.string().nullable() }).strict();
+
+/** Fields the "syn" layer (data 0.3) adds: the Syn. section, parsed. */
+export const SynFields = z.object({
+  synonyms: z
+    .object({
+      /** The synonym list, each word resolved to an entry when one matches ("To give up" looks up "give up"). */
+      words: z.array(Linked.extend({ lookup: z.string() }).strict()),
+      /** Text after the list: "See Grand." or a short comment. */
+      note: Block.nullable(),
+      /** Essays on how near-synonyms differ; `compares` is empty for an essay printed without a heading. */
+      essays: z.array(z.object({ compares: z.array(Linked), text: z.string(), xrefs: z.array(Xref) }).strict()),
+      /** Run-in derived forms that followed the section, as printed (for the quotes layer). */
+      derived: z.array(z.string()),
+    })
+    .strict()
+    .nullable(),
+});
+
+export const SynEntry = SensesEntry.extend(SynFields.shape).strict();
+export type SynEntry = z.infer<typeof SynEntry>;
+
+/** Any edition line: the segment layer alone, or with the senses (and syn) layers. */
+export const EditionEntry = z.union([SynEntry, SensesEntry, SegmentEntry]);
 export type EditionEntry = z.infer<typeof EditionEntry>;
 
 export const Manifest = z

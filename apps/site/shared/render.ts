@@ -18,10 +18,16 @@ export interface RenderableEntry {
   senses: Sense[];
   notes: Block[];
   syn: string | null;
+  /** The parsed Syn. section (data 0.3); without it the raw Syn. line is shown. */
+  synonyms?: Synonyms | null;
 }
 
-/** Where a linked entry lives: its page path and the anchor of its section. */
-export type Locate = (id: string) => { path: string; anchor: string } | null;
+export interface Linked { text: string; id: string | null }
+export interface Essay { compares: Linked[]; text: string; xrefs: Xref[] }
+export interface Synonyms { words: (Linked & { lookup: string })[]; note: Block | null; essays: Essay[]; derived: string[] }
+
+/** Where a linked entry lives: its page path, its slug, and the anchor of its section. */
+export type Locate = (id: string) => { path: string; slug: string; anchor: string } | null;
 
 const ESC: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ESC[c]!);
@@ -114,9 +120,52 @@ export function bodyHtml(e: RenderableEntry, locate: Locate, anchor: string): st
     }
   }
   flush();
-  if (e.syn) {
+  if (e.synonyms) parts.push(synonymsHtml(e.synonyms, locate, anchor));
+  else if (e.syn) {
     const body = e.syn.replace(/^Syn\.\s*/, "").replace(/^\s*--\s*/, "");
     parts.push(`<p class="syn"><span class="cap">Syn.</span>${prose(body)}</p>`);
   }
   return parts.join("");
+}
+
+/** A word that links to its entry when it resolved, plain text otherwise. */
+function linkedHtml(w: Linked, locate: Locate): string {
+  const where = w.id ? locate(w.id) : null;
+  return where ? `<a href="${where.path}#${where.anchor}" class="x">${escapeHtml(w.text)}</a>` : `<span>${escapeHtml(w.text)}</span>`;
+}
+
+/** The compare page for an essay's words: those that resolved, at most three. */
+export function compareHref(compares: Linked[], locate: Locate): string | null {
+  const slugs = [...new Set(compares.map((c) => (c.id ? locate(c.id)?.slug : undefined)).filter((s): s is string => !!s))].slice(0, 3);
+  return slugs.length >= 2 ? `/synonyms/compare?w=${slugs.join(",")}` : null;
+}
+
+/**
+ * One essay: its heading (the words it compares, each linked) and its text,
+ * paragraphs as printed. Used on the entry that prints it, on the pages of
+ * the words it compares, and on /synonyms.
+ */
+export function essayHtml(x: Essay, locate: Locate, headingTag = "h4"): string {
+  const head = x.compares.length
+    ? x.compares.map((c) => linkedHtml(c, locate)).join('<span class="sep" aria-hidden="true"> · </span>')
+    : "On these words";
+  const cmp = compareHref(x.compares, locate);
+  return (
+    `<div class="essay"><${headingTag} class="eh">${head}</${headingTag}>` +
+    blockHtml({ text: x.text.replace(/\n(?!\n)/g, " "), xrefs: [] }, locate, "p", "et") +
+    (cmp ? `<p class="cmp"><a href="${cmp}" class="t">Compare side by side →</a></p>` : "") +
+    `</div>`
+  );
+}
+
+/**
+ * The Synonyms block of an entry (DESIGN.md §4, "Is there a better word?"):
+ * the list with each word linked, the note with its links, then the essays.
+ */
+export function synonymsHtml(s: Synonyms, locate: Locate, anchor: string): string {
+  let html = `<section class="syns" id="${anchor}-syn" aria-labelledby="${anchor}-syn-h"><h3 id="${anchor}-syn-h" class="cap sh">Synonyms</h3>`;
+  if (s.words.length) html += `<ul class="sw">${s.words.map((w) => `<li>${linkedHtml(w, locate)}</li>`).join("")}</ul>`;
+  if (s.note) html += blockHtml(s.note, locate, "p", "snote");
+  for (const x of s.essays) html += essayHtml({ ...x, xrefs: [] }, locate);
+  return html + "</section>";
 }

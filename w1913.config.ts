@@ -76,7 +76,7 @@ export const config = {
      * A wrong value fails the deploy at the import step; the live site is
      * unaffected.
      */
-    version: "0.2",
+    version: "0.3",
   },
 
   // ---------------------------------------------------------------------------

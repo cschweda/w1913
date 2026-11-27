@@ -26,6 +26,18 @@ export default defineEventHandler((event) => {
   const backlinks = db
     .prepare("SELECT from_slug AS slug, from_headword AS headword FROM backlinks WHERE slug = ? ORDER BY from_ord")
     .all(slug) as { slug: string; headword: string }[];
+  // Synonyms (data 0.3): the pages whose Syn. lists name this word, and the
+  // essays printed elsewhere that compare it.
+  const listedUnder = db
+    .prepare("SELECT from_slug AS slug, from_headword AS headword FROM syn_listed WHERE slug = ? ORDER BY from_ord")
+    .all(slug) as { slug: string; headword: string }[];
+  const essaysElsewhere = db
+    .prepare(
+      `SELECT e.id, e.from_slug AS slug, e.from_headword AS headword, e.from_anchor AS anchor, e.html
+       FROM essay_pages p JOIN essays e ON e.id = p.essay_id
+       WHERE p.slug = ? AND e.from_slug != ? ORDER BY e.from_ord`,
+    )
+    .all(slug, slug) as { id: number; slug: string; headword: string; anchor: string; html: string }[];
   setHeader(event, "cache-control", `public, max-age=${config.cache.entrySeconds}`);
   return {
     slug: page.slug,
@@ -33,5 +45,7 @@ export default defineEventHandler((event) => {
     entries,
     neighbors: near.map((n) => ({ slug: n.slug, headword: n.headword, current: n.rank === page.rank })),
     backlinks,
+    listedUnder,
+    essaysElsewhere,
   };
 });

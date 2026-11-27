@@ -4,7 +4,8 @@ import { foldForCompare } from "../segment/fold.ts";
 import type { RawEntry } from "../segment/segment.ts";
 import { parseSenses, type Block, type SensesLayer } from "../senses/parse.ts";
 import type { XrefMatch } from "../senses/xrefs.ts";
-import type { SegmentEntry, SensesEntry } from "./schema.ts";
+import { parseSyn } from "../syn/parse.ts";
+import type { SegmentEntry, SensesEntry, SynEntry } from "./schema.ts";
 
 type ResolvedXref = XrefMatch & { id: string | null };
 
@@ -51,5 +52,26 @@ export function toSensesEntry(seg: SegmentEntry, raw: RawEntry, resolve: (x: Xre
     notes: layer.notes.map(fix),
     syn: layer.syn,
     layers: ["segment", "senses"],
+  };
+}
+
+/**
+ * The syn layer on top of the senses layer. Rule: each list word and each
+ * compared word resolves like a cross-reference to the word itself (no part
+ * of speech); essays and the note keep their own cross-references.
+ */
+export function toSynEntry(e: SensesEntry, resolve: (x: XrefMatch) => string | null): SynEntry {
+  const s = parseSyn(e.syn);
+  const id = (word: string) => resolve({ start: 0, end: 0, to: word, pos: null, sense: null });
+  const fix = <T extends { xrefs: XrefMatch[] }>(b: T) => ({ ...b, xrefs: b.xrefs.map((x) => ({ ...x, id: resolve(x) })) });
+  return {
+    ...e,
+    synonyms: s && {
+      words: s.words.map((w) => ({ text: w.text, lookup: w.lookup, id: id(w.lookup) })),
+      note: s.note ? fix(s.note) : null,
+      essays: s.essays.map((x) => ({ ...fix(x), compares: x.compares.map((c) => ({ text: c, id: id(c) })) })),
+      derived: s.derived,
+    },
+    layers: ["segment", "senses", "syn"],
   };
 }

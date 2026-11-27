@@ -12,7 +12,7 @@ import Database from "better-sqlite3";
 import config from "../../../w1913.config.ts";
 import { foldForCompare } from "../shared/fold.ts";
 import { posAnchor, posTitle } from "../shared/pos.ts";
-import { bodyHtml, metaHtml, type Locate, type RenderableEntry } from "../shared/render.ts";
+import { bodyHtml, essayHtml, metaHtml, prose, type Locate, type RenderableEntry } from "../shared/render.ts";
 import { entryPath } from "../shared/fold.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -25,8 +25,8 @@ if (!existsSync(manifestFile)) {
   process.exit(1);
 }
 const manifest = JSON.parse(readFileSync(manifestFile, "utf8"));
-if (manifest.version !== pin.version || !manifest.layers.includes("senses")) {
-  console.error(`Edition ${manifest.version} with layers ${manifest.layers} does not match the pin ${pin.version} (needs senses).`);
+if (manifest.version !== pin.version || !manifest.layers.includes("senses") || !manifest.layers.includes("syn")) {
+  console.error(`Edition ${manifest.version} with layers ${manifest.layers} does not match the pin ${pin.version} (needs senses and syn).`);
   process.exit(1);
 }
 const dbPath = path.resolve(process.env.W1913_DB_PATH ?? path.join(repo, config.paths.devDatabase));
@@ -66,7 +66,7 @@ for (const list of pages.values()) {
 const byId = new Map(entries.map((e) => [e.id, e]));
 const locate: Locate = (id) => {
   const e = byId.get(id);
-  return e ? { path: entryPath(slugOf(e)), anchor: anchorOf.get(id)! } : null;
+  return e ? { path: entryPath(slugOf(e)), slug: slugOf(e), anchor: anchorOf.get(id)! } : null;
 };
 
 const db = new Database(tmp);
@@ -78,13 +78,24 @@ db.exec(`
     id TEXT PRIMARY KEY, slug TEXT NOT NULL, ord INTEGER NOT NULL, homograph_no INTEGER NOT NULL,
     anchor TEXT NOT NULL, headword TEXT NOT NULL, headword_marked TEXT, pos TEXT, pos_title TEXT,
     letter TEXT NOT NULL, sense_count INTEGER NOT NULL, meta_html TEXT NOT NULL, body_html TEXT NOT NULL,
-    text TEXT NOT NULL
+    text TEXT NOT NULL, summary TEXT NOT NULL
   );
+  CREATE TABLE syn_listed (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
+  CREATE TABLE essays (id INTEGER PRIMARY KEY, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_anchor TEXT NOT NULL,
+    from_ord INTEGER NOT NULL, title TEXT NOT NULL, sort_key TEXT NOT NULL, html TEXT NOT NULL);
+  CREATE TABLE essay_pages (essay_id INTEGER NOT NULL, slug TEXT NOT NULL);
   CREATE TABLE pages (slug TEXT PRIMARY KEY, headword TEXT NOT NULL, first_ord INTEGER NOT NULL, rank INTEGER NOT NULL, entries INTEGER NOT NULL);
   CREATE TABLE forms (fold TEXT NOT NULL, form TEXT NOT NULL, slug TEXT NOT NULL, kind TEXT NOT NULL, ord INTEGER NOT NULL);
   CREATE TABLE backlinks (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
 `);
-const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text)`);
+const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text,@summary)`);
+const insListed = db.prepare(`INSERT INTO syn_listed VALUES (?,?,?,?)`);
+const insEssay = db.prepare(`INSERT INTO essays VALUES (?,?,?,?,?,?,?,?)`);
+const insEssayPage = db.prepare(`INSERT INTO essay_pages VALUES (?,?)`);
+
+/** The first two senses as plain text, for the compare page. */
+const summaryOf = (e: Entry) =>
+  e.senses.filter((s) => s.text.trim()).slice(0, 2).map((s, i) => `${s.n ?? i + 1}. ${prose(s.text).replace(/&[a-z#0-9]+;/g, (m) => ({ "&amp;": "&", "&quot;": '"', "&#39;": "'", "&lt;": "<", "&gt;": ">" })[m] ?? m)}`).join("  ").slice(0, 420);
 const insPage = db.prepare(`INSERT INTO pages VALUES (?,?,?,?,?)`);
 const insForm = db.prepare(`INSERT INTO forms VALUES (?,?,?,?,?)`);
 const insBack = db.prepare(`INSERT INTO backlinks VALUES (?,?,?,?)`);
@@ -117,7 +128,7 @@ db.transaction(() => {
       headword: e.headword, headword_marked: e.marked, pos: e.pos, pos_title: e.pos ? posTitle(e.pos) : null,
       letter: (foldForCompare(e.headword)[0] ?? "#").toUpperCase(),
       sense_count: e.senses.filter((s) => s.n !== null).length,
-      meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor), text: e.text,
+      meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor), text: e.text, summary: summaryOf(e),
     });
     const seen = new Set<string>();
     for (const [form, kind] of [[e.headword, "headword"], ...e.variants.map((v) => [v, "variant"])] as [string, string][]) {
@@ -132,6 +143,35 @@ db.transaction(() => {
     .sort((a, b) => a.first - b.first)
     .forEach((p, rank) => insPage.run(p.slug, p.headword, p.first, rank, p.n));
   for (const [to, froms] of backlinks) for (const [from, v] of froms) insBack.run(to, from, v.headword, v.ord);
+
+  // Synonyms (data 0.3). "Listed as a synonym under": for each listed word
+  // that resolves to a page, the page whose Syn. list names it. Essays: each
+  // stored once, and indexed by the page that prints it and the pages of the
+  // words it compares, so it shows on all of them.
+  const listed = new Set<string>();
+  let essayId = 0;
+  for (const e of entries) {
+    const s = e.synonyms;
+    if (!s) continue;
+    const from = slugOf(e);
+    const head = pages.get(from)![0]!;
+    for (const w of s.words) {
+      const target = w.id ? byId.get(w.id) : undefined;
+      if (!target) continue;
+      const to = slugOf(target);
+      const key = `${to}|${from}`;
+      if (to === from || listed.has(key)) continue;
+      listed.add(key);
+      insListed.run(to, from, head.headword, head.ord);
+    }
+    for (const x of s.essays) {
+      essayId++;
+      const title = x.compares.length ? x.compares.map((c) => c.text).join(", ") : head.headword;
+      insEssay.run(essayId, from, head.headword, anchorOf.get(e.id)!, e.ord, title, (x.compares[0]?.text ?? head.headword).toLowerCase(), essayHtml({ ...x, xrefs: [] }, locate, "h3"));
+      const on = new Set([from, ...x.compares.map((c) => (c.id && byId.get(c.id) ? slugOf(byId.get(c.id)!) : null)).filter((v): v is string => !!v)]);
+      for (const slug of on) insEssayPage.run(essayId, slug);
+    }
+  }
   const ins = db.prepare("INSERT INTO meta VALUES (?, ?)");
   ins.run("edition", manifest.version);
   ins.run("layers", manifest.layers.join(","));
@@ -144,6 +184,9 @@ db.exec(`
   CREATE INDEX pages_rank ON pages (rank);
   CREATE INDEX forms_fold ON forms (fold, ord);
   CREATE INDEX backlinks_slug ON backlinks (slug, from_ord);
+  CREATE INDEX syn_listed_slug ON syn_listed (slug, from_ord);
+  CREATE INDEX essay_pages_slug ON essay_pages (slug);
+  CREATE INDEX essays_sort ON essays (sort_key);
   ANALYZE;
 `);
 db.close();

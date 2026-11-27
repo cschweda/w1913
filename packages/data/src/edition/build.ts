@@ -11,10 +11,10 @@ import { slice, type SliceName } from "../audit/slices.ts";
 import { segment } from "../segment/segment.ts";
 import { EditionEntry, Manifest, type Layer } from "./schema.ts";
 import { toSegmentEntries } from "./segment-layer.ts";
-import { makeResolver, toSensesEntry } from "./senses-layer.ts";
+import { makeResolver, toSensesEntry, toSynEntry } from "./senses-layer.ts";
 
 /** Bump whenever a parser change can alter the edition's content. */
-export const PARSER_VERSION = "0.1.1";
+export const PARSER_VERSION = "0.2.0";
 
 export interface ReleaseSpec {
   version: string;
@@ -29,6 +29,7 @@ export const RELEASES: readonly ReleaseSpec[] = [
   SPIKE_RELEASE,
   { version: "0.1", layers: ["segment"], scope: "all" },
   { version: "0.2", layers: ["segment", "senses"], scope: "all" },
+  { version: "0.3", layers: ["segment", "senses", "syn"], scope: "all" },
 ];
 
 export interface BuildResult {
@@ -71,7 +72,8 @@ export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } 
   const { entries: raw } = segment(canonical.lines, canonical.firstLineNumber);
   const segmentLayer = toSegmentEntries(raw);
   const resolve = spec.layers.includes("senses") ? makeResolver(segmentLayer) : null;
-  const all = resolve ? segmentLayer.map((e, i) => toSensesEntry(e, raw[i]!, resolve)) : segmentLayer;
+  const withSenses = resolve ? segmentLayer.map((e, i) => toSensesEntry(e, raw[i]!, resolve)) : segmentLayer;
+  const all = resolve && spec.layers.includes("syn") ? withSenses.map((e) => toSynEntry(e as ReturnType<typeof toSensesEntry>, resolve)) : withSenses;
   const chosen =
     spec.scope === "all"
       ? all

@@ -93,3 +93,17 @@ li:target, .sec:target > .hh { background: color-mix(in srgb, var(--ac) 12%, tra
 /* Decoded abbreviations: a dotted underline says "hover or see the key below". */
 abbr[title] { text-decoration: underline dotted var(--mu); text-underline-offset: 3px; cursor: help; }
 .hh abbr[title] { text-decoration: none; }
+
+/* Synonyms (data 0.3; shared/render.ts synonymsHtml / essayHtml). */
+.syns { margin: 32px 0 0; padding: 20px 0 0; border-top: 1px solid var(--ln); }
+.sh { margin: 0 0 12px; font-weight: 400; }
+.sw { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 20px; line-height: 1.7; }
+.sw span { color: var(--mu); }
+.snote { margin: 10px 0 0; font-size: 17px; line-height: 1.5; }
+.essay { margin: 24px 0 0; padding: 16px 20px; border-left: 3px solid var(--ac); background: color-mix(in srgb, var(--fg) 4%, transparent); }
+.eh { margin: 0 0 8px; font-size: 19px; font-weight: 700; line-height: 1.4; }
+.eh .sep { color: var(--mu); }
+.et { margin: 0; font-size: 17px; line-height: 1.6; }
+.et + .et { margin-top: 10px; }
+.cmp { margin: 8px 0 0; font-size: 15px; }
+.cmp a { border-bottom: 1px solid var(--ac); min-height: 44px; }
