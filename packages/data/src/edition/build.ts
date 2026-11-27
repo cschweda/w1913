@@ -17,7 +17,7 @@ import { LABELS } from "../labels/vocabulary.ts";
 import { AUTHORS, BIBLE } from "../quotes/authors.ts";
 
 /** Bump whenever a parser change can alter the edition's content. */
-export const PARSER_VERSION = "0.6.0";
+export const PARSER_VERSION = "0.6.1";
 
 export interface ReleaseSpec {
   version: string;

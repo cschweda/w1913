@@ -41,6 +41,9 @@ describe("authors", () => {
     expect(normaliseAuthor("1 Cor. xii. 5")).toMatchObject({ key: "bible", ref: "1 Corinthians xii. 5" });
     expect(normaliseAuthor("Jer. Taylor").key).toBe("jeremy-taylor");
     expect(normaliseAuthor("Jer. xlii. 4")).toMatchObject({ key: "bible", ref: "Jeremiah xlii. 4" });
-    expect(normaliseAuthor("Rogers")).toMatchObject({ key: "rogers", name: "Rogers", known: false });
+    expect(normaliseAuthor("Knight")).toMatchObject({ key: "knight", name: "Knight", known: false });
+    // Identified in the top-300 pass, keeping the key the printed form had.
+    expect(normaliseAuthor("Rogers")).toMatchObject({ key: "rogers", name: "Samuel Rogers", known: true });
+    expect(normaliseAuthor("W. Irwing").key).toBe("washington-irving");
   });
 });

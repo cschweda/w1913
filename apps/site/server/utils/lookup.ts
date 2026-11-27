@@ -36,7 +36,7 @@ export function suggest(q: string, limit: number = config.features.suggestions):
 export function phraseOf(text: string): { slug: string; anchor: string; phrase: string } | null {
   const f = foldForCompare(text);
   if (!f) return null;
-  return (useDb().prepare("SELECT slug, anchor, phrase FROM phrases WHERE fold = ? ORDER BY ord LIMIT 1").get(f) as { slug: string; anchor: string; phrase: string } | undefined) ?? null;
+  return (useDb().prepare("SELECT slug, anchor, phrase FROM phrases WHERE fold = ? ORDER BY ord, rowid LIMIT 1").get(f) as { slug: string; anchor: string; phrase: string } | undefined) ?? null;
 }
 
 /** Rule: an exact headword or variant match after folding, then a listed inflection ("went" → go), else null. */

@@ -9,7 +9,7 @@ import config from "../../../w1913.config.ts";
 import { createLookup, createShardedLookup } from "../../../packages/lookup/src/lookup.ts";
 import { makeShards } from "../../../packages/lookup/src/shards.ts";
 import type { LookupBuild } from "../../../packages/lookup/src/format.ts";
-import { foldForCompare } from "./fold.ts";
+import { foldForCompare, slugify } from "./fold.ts";
 import { lookupWith } from "./inflect.ts";
 
 const WORDS = `
@@ -79,5 +79,36 @@ describe.skipIf(!ready)("Phase 7 exit test: lookup() agrees with the site on 200
     expect(lk!.lookup("search")!.url).toBe("https://w1913.com/w/search");
     // Block quotations are left out of sense text; the definition stays.
     expect(lk!.lookup("sublime")!.entries[0]!.senses[0]!.text).toBe("Lifted up; high in place; exalted aloft; uplifted; lofty.");
+  });
+
+  // Phrases (edition 0.7): the same page and anchor as the site's /bill-of-fare
+  // (server/utils/lookup.ts phraseOf, tried before stems when no page has that slug).
+  const PHRASES = ["bill of fare", "Bill of Exchange", "love apple", "apple of discord", "to play possum", "act of God", "base hit",
+    "fiat money", "black grouse", "chain shot", "point lace", "spherical excess", "in favor of", "to curry favor", "cast iron",
+    "sea-salmon", "walked", "bill of nothing", "apple of my eye", "great bear"];
+  const qp = conn?.prepare("SELECT slug, anchor FROM phrases WHERE fold = ? ORDER BY ord, rowid LIMIT 1");
+  const qpage = conn?.prepare("SELECT 1 FROM pages WHERE slug = ?");
+  const sitePhrase = (w: string) => {
+    const slug = slugify(w);
+    if (!slug.includes("-") || qpage!.get(slug)) return null;
+    return (qp!.get(foldForCompare(w)) as { slug: string; anchor: string } | undefined) ?? null;
+  };
+  it("finds the same phrases, with the same anchors, from the build and from shards", async () => {
+    const shards = makeShards(build!);
+    const sl = createShardedLookup(async (p) => shards.get(p) ?? null);
+    const found = PHRASES.filter((w) => sitePhrase(w));
+    expect(found.length).toBeGreaterThanOrEqual(14);
+    const differ: string[] = [];
+    for (const w of PHRASES) {
+      const a = sitePhrase(w);
+      const b = lk!.lookup(w);
+      const c = await sl.lookup(w);
+      const key = (r: typeof b) => (r?.phrase ? `${r.slug}#${r.phrase.anchor}` : null);
+      if ((a ? `${a.slug}#${a.anchor}` : null) !== key(b) || key(b) !== key(c)) differ.push(w);
+    }
+    expect(differ).toEqual([]);
+    expect(lk!.lookup("bill of fare")!.phrase!.definition).toMatch(/^a written or printed enumeration of the dishes/);
+    // A sense ends where its phrases begin.
+    expect(lk!.lookup("bill")!.entries.at(-1)!.senses.at(-1)!.text).not.toMatch(/Bill of costs/);
   });
 });

@@ -1,7 +1,7 @@
 ![w1913.com: W for Webster's, 1913 for the Revised Unabridged edition. A dictionary for writers.](assets/og-image.png)
 
 [![Live: w1913.com](https://img.shields.io/badge/live-w1913.com-c8102e.svg)](https://w1913.com)
-[![Version 0.13.0](https://img.shields.io/badge/version-0.13.0-111111.svg)](CHANGELOG.md)
+[![Version 0.14.0](https://img.shields.io/badge/version-0.14.0-111111.svg)](CHANGELOG.md)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-111111.svg)](LICENSE)
 [![Data: CC0 1.0](https://img.shields.io/badge/data-CC0%201.0-111111.svg)](LICENSE-DATA)
 [![Node 24](https://img.shields.io/badge/node-24-111111.svg)](.nvmrc)
@@ -42,7 +42,7 @@ The 1913 Webster's is loved for its discursive definitions, its literary quotati
 - **Look up by selection**: select a word in an entry to jump to it.
 - **Dark and light themes**, fast on a phone (Lighthouse 100 for performance, accessibility, best practices, and SEO), and no WCAG 2.2 AA violations on any page type.
 - **Private**: no accounts, no tracking cookies, and the words you look up are not logged.
-- **Offline lookup for other programs**: [`@w1913/lookup`](packages/lookup) looks words up with the same answers as the site, from a 7.5 MB lookup build (no API, nothing sent anywhere), or from static shards at `w1913.com/data/0.7/<prefix>.json`.
+- **Offline lookup for other programs**: [`@w1913/lookup`](packages/lookup) looks words up with the same answers as the site, from an 8.1 MB lookup build (no API, nothing sent anywhere), or from static shards at `w1913.com/data/0.7/<prefix>.json`.
 - **Readable by machines**: a canonical address, descriptions, and schema.org structured data on every page (each entry is a `DefinedTerm`), plus [/llms.txt](https://w1913.com/llms.txt).
 
 ![An entry: "Subtle", with its syllable diagram, decoded abbreviations in the etymology, four numbered senses, the Syn. line, and the neighbors list on the left.](docs/images/entry-subtle.jpg)
@@ -112,7 +112,7 @@ cd ~/w1913.com          # the checkout
 ./rebuild.sh --rollback # back to the previous release
 ```
 
-Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.13.0 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
+Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.14.0 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
 
 ## Licence
 

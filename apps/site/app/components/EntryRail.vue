@@ -2,7 +2,7 @@
 import { entryPath } from "../../shared/fold";
 
 defineProps<{
-  sections: { anchor: string; label: string }[];
+  sections: { anchor: string; label: string; child?: boolean }[];
   neighbors: { slug: string; headword: string; current: boolean }[];
 }>();
 </script>
@@ -12,7 +12,7 @@ defineProps<{
     <nav v-if="sections.length > 1" aria-labelledby="otp-h" class="block">
       <h2 id="otp-h" class="cap head">On this page</h2>
       <ul>
-        <li v-for="s in sections" :key="s.anchor"><a :href="`#${s.anchor}`" class="t">{{ s.label }}</a></li>
+        <li v-for="s in sections" :key="s.anchor" :class="{ child: s.child }"><a :href="`#${s.anchor}`" class="t">{{ s.label }}</a></li>
       </ul>
     </nav>
     <nav aria-labelledby="nb-h" class="block">
@@ -33,5 +33,6 @@ defineProps<{
 .head { margin: 0; padding-bottom: 12px; border-bottom: 1px solid var(--ln); font-weight: 400; }
 ul { list-style: none; margin: 0; padding: 0; }
 .nb { color: var(--mu); }
+.child { padding-left: 14px; }
 .here { color: var(--fg); font-weight: 700; }
 </style>

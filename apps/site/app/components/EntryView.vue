@@ -56,11 +56,14 @@ function shownMarked(m: string | null, fallback: string) {
   if (!m) return fallback;
   return m.replace(/\*/g, "·").replace(/"/g, "″").replace(/`/g, "′");
 }
+// "On this page": each homograph, and its Phrases list when it has one (data 0.7).
 const sections = computed(() =>
-  page.entries.map((e) => ({
-    anchor: e.anchor,
-    label: [e.pos ?? "entry", e.sense_count > 1 ? `${e.sense_count} senses` : ""].filter(Boolean).join(" · "),
-  })),
+  page.entries.flatMap((e) => {
+    const pos = e.pos ?? "entry";
+    const own = { anchor: e.anchor, label: [pos, e.sense_count > 1 ? `${e.sense_count} senses` : ""].filter(Boolean).join(" · ") };
+    const n = e.body_html.includes(`id="${e.anchor}-phrases"`) ? e.body_html.split('class="ci"').length - 1 : 0;
+    return n ? [own, { anchor: `${e.anchor}-phrases`, label: `${n} ${n === 1 ? "phrase" : "phrases"}`, child: true }] : [own];
+  }),
 );
 /**
  * Rule: a headword never breaks inside a word. Lines may break at spaces and

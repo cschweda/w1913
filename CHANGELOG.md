@@ -17,6 +17,32 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-27
+
+Phrases everywhere the words are, and the top-300 authors pass.
+
+### Added
+
+- **"On this page"** lists each entry's Phrases section ("22 phrases") under the entry.
+- **Phrases in the lookup build and shards.** `@w1913/lookup` 0.2.0: `lookup("bill of fare")`
+  returns the *bill* page with `phrase` set (its phrases, definition, anchor and URL), and every
+  entry has `phrases`. Sense text ends where the phrases begin, as on the site. Still format 1
+  (the new fields are optional). 24.8 MB, 8.1 MB gzipped; 380 shards. The Phase 7 agreement
+  test gains 20 phrases (the build and the shards answer exactly as the site's `/bill-of-fare`).
+
+### Changed
+
+- **Authors: the top-300 pass.** 57 more of the most-quoted short forms identified, each only
+  where it names one writer (*Rogers* → Samuel Rogers, *Hood* → Thomas Hood, *Blackw. Mag.* →
+  Blackwood's Magazine; *W. Irwing* merged into Washington Irving). 312 authors; 286 of the 300
+  most quoted; 91.1% of quotations now have a named author (was 89.4%). Their `/author`
+  addresses do not change. Bare surnames that could be several writers (*Taylor*, *Scott*) stay
+  as printed.
+
+### Data
+
+- Edition 0.7 rebuilt with parser 0.6.1 (the author table); same layers.
+
 ## [0.13.0] - 2026-11-27
 
 Phrases: the collocations planned for Phase 5 ("Bill of fare", "Apple of discord", "To play

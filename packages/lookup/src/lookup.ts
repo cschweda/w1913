@@ -1,11 +1,13 @@
 // lookup(word) over a lookup build or static shards, with the same folding
 // and suffix stripping as w1913.com (DESIGN.md §4b).
-import { foldForCompare } from "./fold.ts";
+import { foldForCompare, slugify } from "./fold.ts";
 import { lookupWith, stems } from "./inflect.ts";
 import type { BuildPage, LookupBuild, LookupShard } from "./format.ts";
 
 export interface Sense { n: number | null; text: string; sub: { letter: string; text: string }[] }
-export interface Entry { pos: string | null; senses: Sense[] }
+/** A phrase defined in an entry: its phrases as printed, its definition, and the anchor (of its first phrase, or of the one asked for) on w1913.com. */
+export interface Phrase { phrases: string[]; definition: string; anchor: string; url: string }
+export interface Entry { pos: string | null; senses: Sense[]; phrases: Phrase[] }
 export interface Result {
   slug: string;
   headword: string;
@@ -13,22 +15,34 @@ export interface Result {
   url: string;
   /** The word as given, when it was matched as an inflected form ("walked" for walk); null for a direct match. */
   via: string | null;
+  /** The phrase asked for, when the word was one defined inside the entry ("bill of fare" under bill); null otherwise. */
+  phrase: Phrase | null;
   entries: Entry[];
 }
 
-function toResult(page: BuildPage, via: string | null, site: string, reserved: ReadonlySet<string>): Result {
+function toResult(page: BuildPage, via: string | null, site: string, reserved: ReadonlySet<string>, match: { fold: string; anchor: string } | null = null): Result {
   const [slug, headword, entries] = page;
-  return {
-    slug,
-    headword,
-    url: `${site}/${reserved.has(slug) ? `w/${slug}` : slug}`,
-    via,
-    entries: entries.map(([pos, senses]) => ({
-      pos,
-      senses: senses.map(([n, text, sub]) => ({ n, text, sub: (sub ?? []).map(([letter, t]) => ({ letter, text: t })) })),
-    })),
-  };
+  const url = `${site}/${reserved.has(slug) ? `w/${slug}` : slug}`;
+  const out = entries.map(([pos, senses, phrases]) => ({
+    pos,
+    senses: senses.map(([n, text, sub]) => ({ n, text, sub: (sub ?? []).map(([letter, t]) => ({ letter, text: t })) })),
+    phrases: (phrases ?? []).map(([ps, definition, a]) => ({ phrases: ps, definition, anchor: a, url: `${url}#${a}` })),
+  }));
+  // The run holding the phrase asked for, pointed at that phrase's own anchor ("Love apple" in "Apple of love, or Love apple").
+  const run = match ? out.flatMap((e) => e.phrases).find((p) => p.phrases.some((x) => foldForCompare(x) === match.fold)) : undefined;
+  const phrase = run && match ? { ...run, anchor: match.anchor, url: `${url}#${match.anchor}` } : null;
+  return { slug, headword, url, via, phrase, entries: out };
 }
+
+/**
+ * Rule (as on w1913.com/bill-of-fare): a word of several parts that is not a
+ * page of its own, but is a phrase defined inside an entry, is that phrase;
+ * this comes before inflections and stems.
+ */
+const asPhrase = (word: string, isPage: (slug: string) => boolean) => {
+  const slug = slugify(word);
+  return slug.includes("-") && !isPage(slug) ? foldForCompare(word) : null;
+};
 
 /**
  * Look words up in a whole lookup build (loaded once, then instant and
@@ -50,6 +64,9 @@ export function createLookup(build: LookupBuild) {
   return {
     edition: build.edition,
     lookup(word: string): Result | null {
+      const pf = asPhrase(word, (s) => bySlug.has(s));
+      const hit = pf ? build.phrases?.[pf] : undefined;
+      if (hit) return toResult(build.pages[hit[0]]!, null, build.site, reserved, { fold: pf!, anchor: hit[1] });
       const r = lookupWith(word, exact, foldForCompare, stemExact);
       return r ? toResult(bySlug.get(r.slug)!, r.via, build.site, reserved) : null;
     },
@@ -92,6 +109,11 @@ export function createShardedLookup(fetchShard: (prefix: string) => Promise<Look
       if (!loaded.length) return null;
       const pages = new Map<string, BuildPage>();
       for (const s of loaded) for (const [k, p] of Object.entries(s.pages)) pages.set(k, p);
+      const own = loaded.find((x) => x.prefix === shardPrefix(f));
+      // Every page's slug is a form, so a page "exists" when its folded slug is in the shard's forms as itself.
+      const pf = asPhrase(word, (s) => own?.forms[foldForCompare(s)] === s);
+      const hit = pf ? own?.phrases?.[pf] : undefined;
+      if (hit && pages.has(hit[0])) return toResult(pages.get(hit[0])!, null, loaded[0]!.site, new Set(loaded[0]!.reserved), { fold: pf!, anchor: hit[1] });
       const find = (w: string, stem: boolean) => {
         const g = foldForCompare(w);
         const s = loaded.find((x) => x.prefix === shardPrefix(g));

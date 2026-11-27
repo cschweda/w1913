@@ -8,6 +8,7 @@ const build: LookupBuild = {
   format: "w1913-lookup", formatVersion: 1, edition: "test", siteVersion: "0.0.0", built: "2026-11-27", licence: "CC0-1.0", source: "test",
   site: "https://w1913.com", reserved: ["search"],
   pages: [
+    ["bill", "Bill", [["n.", [[1, "An account."]], [[["Bill of fare"], "a list of dishes.", "n-p-bill-of-fare"], [["Apple of love", "Love apple"], "the tomato.", "n-p-apple-of-love"]]]]],
     ["com", "Com-", [[null, [[null, "A prefix."]]]]],
     ["comet", "Comet", [["n.", [[null, "A celestial body."]]]]],
     ["come", "Come", [["v. i.", [[1, "To move hitherward.", [["a", "Of persons."]]]]]]],
@@ -15,8 +16,9 @@ const build: LookupBuild = {
     ["search", "Search", [["v. t.", [[1, "To look over or through."]]]]],
     ["walk", "Walk", [["v. i.", [[1, "To move along on foot."]]]]],
   ],
-  forms: { com: 0, comet: 1, come: 2, go: 3, went: 3, search: 4, walk: 5 },
+  forms: { bill: 0, com: 1, comet: 2, come: 3, go: 4, went: 4, search: 5, walk: 6 },
   stemForms: { com: -1 },
+  phrases: { billoffare: [0, "n-p-bill-of-fare"], loveapple: [0, "n-p-love-apple"] },
 };
 
 describe("@w1913/lookup", () => {
@@ -33,8 +35,21 @@ describe("@w1913/lookup", () => {
     expect(lk.lookup("cometh")).toMatchObject({ slug: "come", via: "cometh" });
   });
   it("gives senses and sub-senses, and reserved words their /w/ address", () => {
-    expect(lk.lookup("come")!.entries[0]).toEqual({ pos: "v. i.", senses: [{ n: 1, text: "To move hitherward.", sub: [{ letter: "a", text: "Of persons." }] }] });
+    expect(lk.lookup("come")!.entries[0]).toEqual({ pos: "v. i.", senses: [{ n: 1, text: "To move hitherward.", sub: [{ letter: "a", text: "Of persons." }] }], phrases: [] });
     expect(lk.lookup("search")!.url).toBe("https://w1913.com/w/search");
+  });
+  it("finds a phrase defined inside an entry, with its anchor", () => {
+    const r = lk.lookup("Bill of Fare")!;
+    expect(r).toMatchObject({ slug: "bill", via: null, phrase: { phrases: ["Bill of fare"], definition: "a list of dishes.", url: "https://w1913.com/bill#n-p-bill-of-fare" } });
+    expect(lk.lookup("love-apple")!.phrase).toMatchObject({ phrases: ["Apple of love", "Love apple"], url: "https://w1913.com/bill#n-p-love-apple" });
+    expect(lk.lookup("bill")!.phrase).toBeNull();
+  });
+  it("finds the same phrase from shards", async () => {
+    const shards = makeShards(build);
+    const sl = createShardedLookup(async (p) => shards.get(p) ?? null);
+    expect((await sl.lookup("bill of fare"))!.phrase!.url).toBe("https://w1913.com/bill#n-p-bill-of-fare");
+    expect((await sl.lookup("love apple"))!.phrase!.anchor).toBe("n-p-love-apple");
+    expect((await sl.lookup("bill"))!.phrase).toBeNull();
   });
   it("returns null for a word it does not have, and refuses other files", () => {
     expect(lk.lookup("smartphone")).toBeNull();

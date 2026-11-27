@@ -15,16 +15,24 @@ dictionary.lookup("goeth");
 // { slug: "go", headword: "Go", via: "goeth", url: "https://w1913.com/go",
 //   entries: [{ pos: "v. i.", senses: [{ n: 1, text: "To pass from one place to another; …", sub: [] }, …] }, …] }
 
+dictionary.lookup("bill of fare");
+// { slug: "bill", headword: "Bill", via: null, url: "https://w1913.com/bill",
+//   phrase: { phrases: ["Bill of fare"], definition: "a written or printed enumeration of the dishes …",
+//             anchor: "n4-p-bill-of-fare", url: "https://w1913.com/bill#n4-p-bill-of-fare" }, entries: [ … ] }
+
 dictionary.lookup("smartphone"); // null: not in this dictionary
 dictionary.suggest("saun");      // [{ headword: "Saunter", slug: "saunter" }, …]
 ```
 
 ## The data
 
-- **The lookup build**, `w1913-lookup-<edition>.json` (22.7 MB; 7.5 MB gzipped, edition 0.7):
+- **The lookup build**, `w1913-lookup-<edition>.json` (24.8 MB; 8.1 MB gzipped, edition 0.7):
   every headword, variant and listed inflection; every entry's part of speech and senses, with
-  block quotations left out. Published with each W1913 release. CC0 1.0.
-- **Static shards** at `https://w1913.com/data/<edition>/<prefix>.json` (362 files, one per
+  block quotations left out; and, from edition 0.7, the phrases defined inside entries (24,628,
+  such as *Bill of fare*), each with its definition and its anchor on w1913.com. A word of several
+  parts that is not a page of its own but is such a phrase comes back with `phrase` set; every
+  entry lists its `phrases`. Older builds simply have none. Published with each W1913 release. CC0 1.0.
+- **Static shards** at `https://w1913.com/data/<edition>/<prefix>.json` (380 files, one per
   two-letter prefix; `index.json` lists them), for a browser program that may fetch from
   w1913.com:
 

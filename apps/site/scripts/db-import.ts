@@ -6,7 +6,7 @@
 // leaves a half-built database where the site would open it.
 import { createReadStream, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
-import type { BuildPage, BuildSense, LookupBuild } from "../../../packages/lookup/src/format.ts";
+import type { BuildEntry, BuildPage, BuildPhrase, BuildSense, LookupBuild } from "../../../packages/lookup/src/format.ts";
 import { makeShards } from "../../../packages/lookup/src/shards.ts";
 import path from "node:path";
 import readline from "node:readline";
@@ -177,6 +177,8 @@ const insPage = db.prepare(`INSERT INTO pages VALUES (?,?,?,?,?)`);
 const insForm = db.prepare(`INSERT INTO forms VALUES (?,?,?,?,?)`);
 const insPhrase = db.prepare(`INSERT INTO phrases VALUES (?,?,?,?,?)`);
 let phraseCount = 0;
+/** Each entry's phrase anchors, per run and phrase, as phrasesHtml gave them (for the lookup build). */
+const phraseAnchors = new Map<string, string[][]>();
 /** The form rows as inserted, for the lookup build (same order as the table). */
 const formRows: { fold: string; form: string; slug: string; kind: string; ord: number }[] = [];
 const insBack = db.prepare(`INSERT INTO backlinks VALUES (?,?,?,?)`);
@@ -214,11 +216,15 @@ db.transaction(() => {
     });
     // Phrases (data 0.7): each with the anchor bodyHtml gave it (phrasesHtml numbers repeats the same way).
     const usedAnchors = new Set<string>();
+    const runAnchors: string[][] = [];
+    phraseAnchors.set(e.id, runAnchors);
     for (const c of e.collocations) {
+      runAnchors.push([]);
       for (const p of c.phrases) {
         let a = phraseAnchor(anchor, p.text);
         for (let k = 2; usedAnchors.has(a); k++) a = `${phraseAnchor(anchor, p.text)}-${k}`;
         usedAnchors.add(a);
+        runAnchors.at(-1)!.push(a);
         const text = p.text.replace(/\s+/g, " ");
         insPhrase.run(foldForCompare(text), text, slug, a, e.ord);
         phraseCount++;
@@ -354,27 +360,45 @@ renameSync(tmp, dbPath);
   const pageList = [...pages.entries()].sort((a, b) => a[1][0]!.ord - b[1][0]!.ord);
   const pageIndex = new Map(pageList.map(([slug], i) => [slug, i]));
   const clean = (s: string) => s.replace(/\s+/g, " ").replace(/--/g, "\u2014").trim();
-  const withoutBlockQuotes = (e: Entry, i: number, sub: number | null, text: string) => {
+  /** Text from `from` to `to` with its block quotations left out. */
+  const withoutBlockQuotes = (e: Entry, i: number, sub: number | null, text: string, from = 0, to = text.length) => {
     let out = "";
-    let at = 0;
-    for (const q of e.quotes.filter((x) => x.sense === i && x.sub === sub && x.kind === "block").sort((a, b) => a.start - b.start)) {
+    let at = from;
+    for (const q of e.quotes.filter((x) => x.sense === i && x.sub === sub && x.kind === "block" && x.start >= from && x.authorEnd <= to).sort((a, b) => a.start - b.start)) {
       out += text.slice(at, q.start);
-      at = Math.min(text.length, q.authorEnd + 1);
+      at = Math.min(to, q.authorEnd + 1);
     }
-    return clean(out + text.slice(at));
+    return clean(out + text.slice(at, to));
   };
+  /** A sense's text up to its phrases (data 0.7), which the entry lists separately. */
+  const senseText = (e: Entry, i: number, sub: number | null, text: string) =>
+    withoutBlockQuotes(e, i, sub, text, 0, Math.min(text.length, ...e.collocations.filter((c) => c.sense === i && c.sub === sub && c.note === null).map((c) => c.at)));
+  const phrasesOf = (e: Entry): BuildPhrase[] =>
+    e.collocations.map((c, k) => {
+      const src = c.sense === null ? e.notes[c.note!]! : c.note !== null ? e.senses[c.sense]!.notes[c.note]! : c.sub !== null ? e.senses[c.sense]!.sub[c.sub]! : e.senses[c.sense]!;
+      const def = c.sense !== null && c.note === null ? withoutBlockQuotes(e, c.sense, c.sub, src.text, c.defStart, c.end) : clean(src.text.slice(c.defStart, c.end));
+      return [c.phrases.map((p) => p.text.replace(/\s+/g, " ")), def, phraseAnchors.get(e.id)![k]![0]!];
+    });
   const builtPages: BuildPage[] = pageList.map(([slug, list]) => [
     slug,
     list[0]!.headword,
-    list.map((e) => [
-      e.pos,
-      e.senses.map((s, i): BuildSense => {
-        const sub = s.sub.map((x, j) => [x.letter, withoutBlockQuotes(e, i, j, x.text)] as [string, string]);
-        const text = withoutBlockQuotes(e, i, null, s.text);
+    list.map((e): BuildEntry => {
+      const senses = e.senses.map((s, i): BuildSense => {
+        const sub = s.sub.map((x, j) => [x.letter, senseText(e, i, j, x.text)] as [string, string]);
+        const text = senseText(e, i, null, s.text);
         return sub.length ? [s.n, text, sub] : [s.n, text];
-      }),
-    ]),
+      });
+      return e.collocations.length ? [e.pos, senses, phrasesOf(e)] : [e.pos, senses];
+    }),
   ]);
+  // Phrases (data 0.7): folded phrase → page and anchor; the first in edition order, as the site's phraseOf().
+  const phraseMap: Record<string, [number, string]> = {};
+  for (const e of entries) {
+    e.collocations.forEach((c, k) => c.phrases.forEach((p, j) => {
+      const f = foldForCompare(p.text);
+      if (f && !(f in phraseMap)) phraseMap[f] = [pageIndex.get(slugOf(e))!, phraseAnchors.get(e.id)![k]![j]!];
+    }));
+  }
   const order = [...formRows].sort((a, b) => Number(a.kind === "inflection") - Number(b.kind === "inflection") || a.ord - b.ord);
   const forms: Record<string, number> = {};
   const stemFirst: Record<string, number> = {};
@@ -389,7 +413,7 @@ renameSync(tmp, dbPath);
     siteVersion: (JSON.parse(readFileSync(path.join(repo, "package.json"), "utf8")) as { version: string }).version,
     built: new Date().toISOString(), licence: "CC0-1.0",
     source: "Webster's Revised Unabridged Dictionary (1913), from Project Gutenberg eBook #29765, via the W1913 edition",
-    site: config.site.url, reserved: [...config.reservedWords], pages: builtPages, forms, stemForms,
+    site: config.site.url, reserved: [...config.reservedWords], pages: builtPages, forms, stemForms, phrases: phraseMap,
   };
   const json = JSON.stringify(build);
   const lookupFile = path.join(path.dirname(dbPath), `w1913-lookup-${manifest.version}.json`);

@@ -17,6 +17,12 @@ export function makeShards(build: LookupBuild): Map<string, LookupShard> {
     s.forms[fold] = p[0];
     add(s, p);
   }
+  for (const [fold, [i, anchor]] of Object.entries(build.phrases ?? {})) {
+    const s = get(shardPrefix(fold));
+    const p = build.pages[i]!;
+    (s.phrases ??= {})[fold] = [p[0], anchor];
+    add(s, p);
+  }
   for (const [fold, i] of Object.entries(build.stemForms)) {
     const s = get(shardPrefix(fold));
     if (i < 0) s.stemForms[fold] = null;
