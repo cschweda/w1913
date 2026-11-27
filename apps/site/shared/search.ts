@@ -99,3 +99,28 @@ export function searchDefinitions(db: Database.Database, q: string, limit = 20, 
   if (all.total > 0 || !q.trim()) return { query: q, ...all, broadened: false };
   return { query: q, ...run("any"), broadened: true };
 }
+
+export interface QuoteHit { slug: string; headword: string; anchor: string; sense: number | null; author: string; authorKey: string; authorName: string; ref: string | null; snippet: string }
+
+/**
+ * Quotation search (DESIGN.md §4, "How did the masters use it?"; data 0.6):
+ * the same query rules as definition search, over the quotations' text,
+ * optionally from one author. Ranked by bm25; matches as <mark>.
+ */
+export function searchQuotes(db: Database.Database, q: string, limit = 20, offset = 0, authorKey = ""): { query: string; total: number; hits: QuoteHit[]; broadened: boolean } {
+  const by = authorKey ? " AND q.author_key = ?" : "";
+  const args = authorKey ? [authorKey] : [];
+  const run = (mode: "all" | "any") => {
+    const fts = toFtsQuery(q, mode);
+    if (!fts) return { total: 0, hits: [] as QuoteHit[] };
+    const base = `FROM fts_quotes f JOIN quotes q ON q.id = f.rowid JOIN pages p ON p.slug = q.slug JOIN authors a ON a.key = q.author_key WHERE fts_quotes MATCH ?${by}`;
+    const total = (db.prepare(`SELECT count(*) AS n ${base}`).get(fts, ...args) as { n: number }).n;
+    const rows = db
+      .prepare(`SELECT q.slug, p.headword, q.anchor, q.sense_n, q.author, q.author_key, a.name AS author_name, q.ref, snippet(fts_quotes, 0, '${OPEN}', '${CLOSE}', '…', 40) AS snip ${base} ORDER BY bm25(fts_quotes) LIMIT ? OFFSET ?`)
+      .all(fts, ...args, limit, offset) as { slug: string; headword: string; anchor: string; sense_n: number | null; author: string; author_key: string; author_name: string; ref: string | null; snip: string }[];
+    return { total, hits: rows.map((r) => ({ slug: r.slug, headword: r.headword, anchor: r.anchor, sense: r.sense_n, author: r.author, authorKey: r.author_key, authorName: r.author_name, ref: r.ref, snippet: snippetHtml(r.snip) })) };
+  };
+  const all = run("all");
+  if (all.total > 0 || !q.trim()) return { query: q, ...all, broadened: false };
+  return { query: q, ...run("any"), broadened: true };
+}

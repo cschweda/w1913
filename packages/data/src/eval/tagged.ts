@@ -11,6 +11,8 @@ export interface TaggedEntry {
   headwordFold: string;
   /** The entry with tags removed and entities decoded to letters. */
   text: string;
+  /** The entry's tagged source, for the answer key. Never leaves cache/eval. */
+  raw: string;
 }
 
 const NAMED: Record<string, string> = {
@@ -68,6 +70,6 @@ export function tokenizeTagged(file: string, raw: string): TaggedEntry[] {
     const chunk = text.slice(s, starts[i + 1] ?? text.length);
     const hw = /<hw>([\s\S]*?)<\/hw>/.exec(chunk)?.[1] ?? "";
     const headword = stripTags(hw).trim();
-    return { file, line: lineAt(s), headword, headwordFold: foldForCompare(headword), text: stripTags(chunk) };
+    return { file, line: lineAt(s), headword, headwordFold: foldForCompare(headword), text: stripTags(chunk), raw: chunk };
   });
 }

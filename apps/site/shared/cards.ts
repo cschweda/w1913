@@ -12,6 +12,8 @@ export interface Card {
   senses: string[];
   /** The entry's synonym words, linked where they resolved. */
   similar: { text: string; slug: string | null }[];
+  /** A short quotation from the entry, with its author as printed and its key (data 0.6). */
+  quote?: { text: string; author: string; key: string } | null;
 }
 
 const CROSS_REF_ONLY = /^(?:\([^)]*\)\s*|\[[^\]]*\]\s*)*(?:See|Same as|Cf\.|Compare|A variant of|Variant of|An obsolete form of|Obs\. form of|pl\. of|imp\. of|p\. p\. of)\b/i;

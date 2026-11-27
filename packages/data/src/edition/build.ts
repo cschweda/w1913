@@ -11,11 +11,12 @@ import { slice, type SliceName } from "../audit/slices.ts";
 import { segment } from "../segment/segment.ts";
 import { EditionEntry, Manifest, type Layer } from "./schema.ts";
 import { toSegmentEntries } from "./segment-layer.ts";
-import { makeResolver, toProsodyEntry, toLabelsEntry, toSensesEntry, toSynEntry } from "./senses-layer.ts";
+import { makeResolver, toQuotesEntry, toProsodyEntry, toLabelsEntry, toSensesEntry, toSynEntry } from "./senses-layer.ts";
 import { LABELS } from "../labels/vocabulary.ts";
+import { AUTHORS, BIBLE } from "../quotes/authors.ts";
 
 /** Bump whenever a parser change can alter the edition's content. */
-export const PARSER_VERSION = "0.4.0";
+export const PARSER_VERSION = "0.5.0";
 
 export interface ReleaseSpec {
   version: string;
@@ -33,6 +34,7 @@ export const RELEASES: readonly ReleaseSpec[] = [
   { version: "0.3", layers: ["segment", "senses", "syn"], scope: "all" },
   { version: "0.4", layers: ["segment", "senses", "syn", "labels"], scope: "all" },
   { version: "0.5", layers: ["segment", "senses", "syn", "labels", "prosody", "forms"], scope: "all" },
+  { version: "0.6", layers: ["segment", "senses", "syn", "labels", "prosody", "forms", "quotes"], scope: "all" },
 ];
 
 export interface BuildResult {
@@ -78,7 +80,8 @@ export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } 
   const withSenses = resolve ? segmentLayer.map((e, i) => toSensesEntry(e, raw[i]!, resolve)) : segmentLayer;
   const withSyn = resolve && spec.layers.includes("syn") ? withSenses.map((e) => toSynEntry(e as ReturnType<typeof toSensesEntry>, resolve)) : withSenses;
   const withLabels = spec.layers.includes("labels") ? withSyn.map((e) => toLabelsEntry(e as ReturnType<typeof toSynEntry>)) : withSyn;
-  const all = spec.layers.includes("prosody") ? withLabels.map((e) => toProsodyEntry(e as ReturnType<typeof toLabelsEntry>)) : withLabels;
+  const withProsody = spec.layers.includes("prosody") ? withLabels.map((e) => toProsodyEntry(e as ReturnType<typeof toLabelsEntry>)) : withLabels;
+  const all = spec.layers.includes("quotes") ? withProsody.map((e) => toQuotesEntry(e as ReturnType<typeof toProsodyEntry>)) : withProsody;
   const chosen =
     spec.scope === "all"
       ? all
@@ -96,6 +99,7 @@ export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } 
   const body = lines.join("\n") + "\n";
   const jsonlName = `w1913-${spec.version}.jsonl`;
   const vocabulary = spec.layers.includes("labels") ? JSON.stringify(LABELS, null, 2) + "\n" : null;
+  const authors = spec.layers.includes("quotes") ? JSON.stringify([BIBLE, ...AUTHORS], null, 2) + "\n" : null;
   const manifest = Manifest.parse({
     edition: "w1913",
     version: spec.version,
@@ -106,6 +110,7 @@ export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } 
     parserVersion: PARSER_VERSION,
     jsonl: { file: jsonlName, sha256: sha256Bytes(body), bytes: Buffer.byteLength(body) },
     ...(vocabulary ? { vocabulary: { file: "labels.json", sha256: sha256Bytes(vocabulary) } } : {}),
+    ...(authors ? { authors: { file: "authors.json", sha256: sha256Bytes(authors) } } : {}),
     licence: "CC0-1.0",
     built: new Date().toISOString(),
   });
@@ -114,6 +119,7 @@ export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } 
   await writeFile(path.join(dir, `${jsonlName}.part`), body);
   await rename(path.join(dir, `${jsonlName}.part`), path.join(dir, jsonlName));
   if (vocabulary) await writeFile(path.join(dir, "labels.json"), vocabulary);
+  if (authors) await writeFile(path.join(dir, "authors.json"), authors);
   await writeFile(path.join(dir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
   return { dir, manifest, reused: false, ms: performance.now() - t0 };
 }

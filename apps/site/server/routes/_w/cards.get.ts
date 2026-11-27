@@ -8,7 +8,7 @@ import { searchDefinitions } from "../../../shared/search";
 interface Row { slug: string; anchor: string; headword: string; headword_marked: string | null; pos: string | null; pos_title: string | null; card_json: string }
 
 const toCard = (r: Row): Card => {
-  const c = JSON.parse(r.card_json) as Pick<Card, "senses" | "similar">;
+  const c = JSON.parse(r.card_json) as Pick<Card, "senses" | "similar" | "quote">;
   return { slug: r.slug, anchor: r.anchor, headword: r.headword, marked: r.headword_marked, pos: r.pos, posTitle: r.pos_title, ...c };
 };
 const COLS = "slug, anchor, headword, headword_marked, pos, pos_title, card_json";
@@ -35,6 +35,18 @@ export default defineEventHandler((event) => {
       )
       .all(code, n) as Row[];
     return rows.sort(() => Math.random() - 0.5).map(toCard);
+  }
+  // By author (data 0.6): random entries the author is quoted in, each card showing that author's quotation.
+  if (deck.startsWith("author:")) {
+    const key = deck.slice(7);
+    const rows = db
+      .prepare(
+        `SELECT ${COLS.split(", ").map((c) => `e.${c}`).join(", ")}, q.text AS qtext, q.author AS qauthor
+         FROM (SELECT ord, min(length(text)) AS l, text, author FROM quotes WHERE author_key = ? AND length(text) <= 220 GROUP BY slug ORDER BY random() LIMIT ?) q
+         JOIN entries e ON e.ord = q.ord`,
+      )
+      .all(key, n) as (Row & { qtext: string; qauthor: string })[];
+    return rows.map((r) => ({ ...toCard(r), quote: { text: r.qtext, author: r.qauthor, key } }));
   }
   // By search: the top results of a definition search, in rank order.
   if (deck.startsWith("q:")) {

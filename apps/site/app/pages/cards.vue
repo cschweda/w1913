@@ -26,6 +26,9 @@ const { data: labelList } = await useFetch<{ code: string; name: string }[]>("/_
 const labelName = (code: string) => labelList.value?.find((l) => l.code === code)?.name ?? code;
 /** Three label decks offered as buttons, as in the mockup; any other label is reached from its label page. */
 const QUICK = ["poetic", "nautical", "obs"];
+/** An author deck's title: the author's name, fetched with the deck's first page. */
+const { data: authorInfo } = await useFetch<{ author: { name: string } } | null>(() => (deckName.value.startsWith("author:") ? `/_w/author/${deckName.value.slice(7)}` : "/_w/author/none"), { key: computed(() => `deck-author-${deckName.value}`), default: () => null, server: false });
+const authorName = computed(() => authorInfo.value?.author?.name ?? null);
 
 const card = computed(() => cards.value[index.value] ?? null);
 const deckLabel = computed(() => {
@@ -34,6 +37,7 @@ const deckLabel = computed(() => {
   if (d === "trail") return "Trail deck";
   if (d.startsWith("label:")) return `${labelName(d.slice(6))} deck`;
   if (d.startsWith("q:")) return `Search deck: “${d.slice(2)}”`;
+  if (d.startsWith("author:")) return `${authorName.value ?? d.slice(7)} deck`;
   return "Deck";
 });
 
@@ -138,6 +142,11 @@ useHead({ script: [ldScript(webPageLd({ url: `${config.site.url}/cards`, name: "
           <ol class="senses">
             <li v-for="(s, i) in card.senses" :key="i">{{ s }}</li>
           </ol>
+          <!-- The quotation usually contains the word, so it is shown only when the word is already on the card. -->
+          <blockquote v-if="showFirst === 'word' && card.quote" class="cq">
+            <p>{{ card.quote.text }}</p>
+            <footer class="qa"><cite><NuxtLink :to="`/author/${card.quote.key}`" class="x">{{ card.quote.author }}</NuxtLink></cite></footer>
+          </blockquote>
           <div v-if="showFirst === 'word' && card.similar.length" class="sim">
             <span class="cap">Similar</span>
             <template v-for="w in card.similar" :key="w.text">
@@ -183,6 +192,8 @@ useHead({ script: [ldScript(webPageLd({ url: `${config.site.url}/cards`, name: "
 .bh abbr { font-size: 18px; font-weight: 400; color: var(--mu); margin-left: 8px; text-decoration: none; }
 .senses { margin: 0; padding-left: 28px; font-size: clamp(20px, 2.6vw, 26px); line-height: 1.35; letter-spacing: -.01em; list-style: decimal; }
 .senses li + li { margin-top: 12px; }
+.cq { margin: 20px 0 0; padding-left: 16px; border-left: 2px solid var(--ln); font-size: 18px; line-height: 1.5; color: var(--mu); }
+.cq p { margin: 0; }
 .senses li::marker { color: var(--ac); font-size: 16px; font-weight: 700; }
 .sim { display: flex; flex-wrap: wrap; align-items: center; gap: 0 20px; padding-top: 12px; border-top: 1px solid var(--ln); font-size: 20px; }
 .sim .cap { margin-right: 8px; }

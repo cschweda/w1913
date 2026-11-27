@@ -9,6 +9,7 @@
     "phase0": "node src/cli/phase0.ts",
     "edition": "node src/cli/edition.ts",
     "eval": "node src/eval/cli.ts",
+    "eval:quotes": "node src/eval/quotes-cli.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json"
   },

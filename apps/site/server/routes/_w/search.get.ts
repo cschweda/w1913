@@ -1,7 +1,7 @@
 // Definition search and the rhythm filter:
 // /_w/search?q=...&syl=2&stress=1&page=N, or ?like=lofty for synonyms of a word.
 import config from "../../../../../w1913.config.ts";
-import { searchDefinitions, synonymsOf } from "../../../shared/search";
+import { searchDefinitions, searchQuotes, synonymsOf } from "../../../shared/search";
 import { lookupWord } from "../../utils/lookup";
 
 const int = (v: unknown, max: number) => { const n = Number(v); return Number.isInteger(n) && n >= 1 && n <= max ? n : null; };
@@ -14,6 +14,11 @@ export default defineEventHandler((event) => {
   const page = Math.max(1, Math.min(50, Number(query.page ?? 1) || 1));
   const per = config.features.resultsPerPage;
   setHeader(event, "cache-control", `public, max-age=${config.cache.entrySeconds}`);
+  if (query.in === "quotes") {
+    const authorKey = String(query.author ?? "").slice(0, 60);
+    const author = authorKey ? (useDb().prepare("SELECT key, name FROM authors WHERE key = ?").get(authorKey) as { key: string; name: string } | undefined) ?? null : null;
+    return { ...searchQuotes(useDb(), q, per, (page - 1) * per, author?.key ?? ""), page, per, like: null, author };
+  }
   if (like) {
     const found = lookupWord(like);
     if (!found) return { query: like, total: 0, hits: [], broadened: false, page, per, like: null };

@@ -37,6 +37,21 @@ export interface RenderableEntry {
   syn: string | null;
   /** The parsed Syn. section (data 0.3); without it the raw Syn. line is shown. */
   synonyms?: Synonyms | null;
+  /** Quotations found in senses and sub-senses (data 0.6); without them quotations stay plain text. */
+  quotes?: QuoteMark[];
+}
+
+/** A quotation in a sense (index `sense`) or sub-sense (`sub`), with offsets in that text (data 0.6). */
+export interface QuoteMark {
+  sense: number; sub: number | null; start: number; end: number; authorStart: number; authorEnd: number;
+  kind: "block" | "inline"; author: string; authorKey: string; authorName: string; ref: string | null;
+}
+
+/** An author as a link to their page; a full name the reader may not know is added for screen readers. */
+export function citeHtml(q: QuoteMark, printed: string): string {
+  const full = q.ref ?? q.authorName;
+  const extra = full && full.replace(/\W/g, "").toLowerCase() !== printed.replace(/\W/g, "").toLowerCase() ? `<span class="vh"> (${escapeHtml(full)})</span>` : "";
+  return `<cite><a href="/author/${q.authorKey}" class="x">${escapeHtml(printed)}${extra}</a></cite>`;
 }
 
 export interface Linked { text: string; id: string | null }
@@ -80,7 +95,7 @@ export function richProse(s: string, context: Context): string {
 }
 
 /** A block's text as HTML paragraphs, with its cross-references linked and abbreviations decoded. */
-export function blockHtml(b: Block, locate: Locate, tag = "p", cls = "", context: Context = "text", unusual: UnusualSpan[] = []): string {
+export function blockHtml(b: Block, locate: Locate, tag = "p", cls = "", context: Context = "text", unusual: UnusualSpan[] = [], extra: { start: number; end: number; html: string }[] = []): string {
   const paras = b.text.split(/\n\n/);
   let offset = 0;
   const out: string[] = [];
@@ -99,6 +114,7 @@ export function blockHtml(b: Block, locate: Locate, tag = "p", cls = "", context
       const hash = x.sense ? `${where.anchor}-${x.sense}` : where.anchor;
       marks.push({ start: x.start, end: x.end, html: () => `<a href="${where.path}#${hash}" class="x">${escapeHtml(b.text.slice(x.start, x.end))}</a>` });
     }
+    for (const x of extra) if (x.start >= start && x.end <= end) marks.push({ start: x.start, end: x.end, html: () => x.html });
     for (const u of unusual) {
       if (u.start < start || u.end > end || marks.some((m) => u.start < m.end && m.start < u.end)) continue;
       marks.push({ start: u.start, end: u.end, html: () => `<a href="${entryPath(u.slug)}" class="rare" data-preview="${u.slug}">${escapeHtml(b.text.slice(u.start, u.end))}</a>` });
@@ -132,10 +148,56 @@ export function metaHtml(e: RenderableEntry, locate: Locate): string {
 export type UnusualFinder = (text: string) => UnusualSpan[];
 const NONE: UnusualFinder = () => [];
 
-function senseInner(s: Sense, locate: Locate, anchor: string, unusual: UnusualFinder): string {
-  let html = s.text ? blockHtml(s, locate, "p", "st", "text", unusual(s.text)) : "";
+/** A block's text from `from` to `to`, with its cross-references and unusual spans moved to match. */
+function sliceBlock(b: Block, spans: UnusualSpan[], from: number, to: number): [Block, UnusualSpan[]] {
+  const inside = <T extends { start: number; end: number }>(x: T) => x.start >= from && x.end <= to;
+  const shift = <T extends { start: number; end: number }>(x: T): T => ({ ...x, start: x.start - from, end: x.end - from });
+  return [{ text: b.text.slice(from, to), xrefs: b.xrefs.filter(inside).map(shift) }, spans.filter(inside).map(shift)];
+}
+
+/**
+ * A sense's (or sub-sense's) text with its quotations (data 0.6): each block
+ * quotation as a <blockquote> with its author in a linked <cite>, the text
+ * around it as paragraphs; an inline quotation keeps its quote marks and
+ * gets a linked <cite> for its author. Without quotations, blockHtml().
+ */
+function quotedHtml(b: Block, quotes: QuoteMark[], locate: Locate, spans: UnusualSpan[]): string {
+  const blocks = quotes.filter((q) => q.kind === "block").sort((a, c) => a.start - c.start);
+  const inlines = quotes.filter((q) => q.kind === "inline");
+  const cites = (from: number, to: number) =>
+    inlines.filter((q) => q.authorStart >= from && q.authorEnd <= to).map((q) => ({ start: q.authorStart - from, end: q.authorEnd - from, html: citeHtml(q, b.text.slice(q.authorStart, q.authorEnd)) }));
+  const part = (from: number, to: number) => {
+    const t = b.text.slice(from, to);
+    const lead = t.length - t.trimStart().length;
+    const trail = t.length - t.trimEnd().length;
+    if (!t.trim()) return "";
+    const [sb, ss] = sliceBlock(b, spans, from + lead, to - trail);
+    return blockHtml(sb, locate, "p", "st", "text", ss, cites(from + lead, to - trail));
+  };
+  let html = "";
+  let at = 0;
+  for (const q of blocks) {
+    html += part(at, q.start);
+    const [qb, qs] = sliceBlock(b, spans, q.start, q.end);
+    // The printed author ends with a full stop just after authorEnd; it is part of the citation.
+    const printed = b.text.slice(q.authorStart, q.authorEnd).replace(/\s+/g, " ");
+    html += `<blockquote class="qt">${blockHtml({ text: qb.text.replace(/\n(?!\n)/g, " "), xrefs: qb.xrefs }, locate, "p", "", "text", qs, cites(q.start, q.end))}<footer class="qa">${citeHtml(q, printed)}</footer></blockquote>`;
+    at = Math.min(b.text.length, q.authorEnd + 1);
+  }
+  return html + part(at, b.text.length);
+}
+
+function senseInner(s: Sense, locate: Locate, anchor: string, unusual: UnusualFinder, quotes: QuoteMark[] = []): string {
+  const own = quotes.filter((q) => q.sub === null);
+  let html = s.text ? (own.length ? quotedHtml(s, own, locate, unusual(s.text)) : blockHtml(s, locate, "p", "st", "text", unusual(s.text))) : "";
   if (s.sub.length) {
-    html += `<ol class="sub" type="a">${s.sub.map((x) => `<li id="${anchor}-${s.n ?? "u"}${x.letter}" value="${x.letter.charCodeAt(0) - 96}">${blockHtml(x, locate, "p", "st", "text", unusual(x.text))}</li>`).join("")}</ol>`;
+    html += `<ol class="sub" type="a">${s.sub
+      .map((x, j) => {
+        const qs = quotes.filter((q) => q.sub === j);
+        const inner = qs.length ? quotedHtml(x, qs, locate, unusual(x.text)) : blockHtml(x, locate, "p", "st", "text", unusual(x.text));
+        return `<li id="${anchor}-${s.n ?? "u"}${x.letter}" value="${x.letter.charCodeAt(0) - 96}">${inner}</li>`;
+      })
+      .join("")}</ol>`;
   }
   for (const n of s.notes) html += noteHtml(n, locate);
   return html;
@@ -158,14 +220,15 @@ export function bodyHtml(e: RenderableEntry, locate: Locate, anchor: string, unu
     if (list.length) parts.push(`<ol class="s">${list.join("")}</ol>`);
     list = [];
   };
-  for (const s of e.senses) {
+  e.senses.forEach((s, i) => {
+    const qs = (e.quotes ?? []).filter((q) => q.sense === i);
     if (s.n !== null) {
-      list.push(`<li id="${anchor}-${s.n}" value="${s.n}">${senseInner(s, locate, anchor, unusual)}</li>`);
+      list.push(`<li id="${anchor}-${s.n}" value="${s.n}">${senseInner(s, locate, anchor, unusual, qs)}</li>`);
     } else {
       flush();
-      parts.push(`<div class="d">${senseInner(s, locate, anchor, unusual)}</div>`);
+      parts.push(`<div class="d">${senseInner(s, locate, anchor, unusual, qs)}</div>`);
     }
-  }
+  });
   flush();
   if (e.synonyms) parts.push(synonymsHtml(e.synonyms, locate, anchor, slug));
   else if (e.syn) {

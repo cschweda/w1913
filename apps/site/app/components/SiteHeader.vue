@@ -11,6 +11,7 @@
     <nav aria-label="Sections" class="sections">
       <NuxtLink to="/search" class="t" active-class="on">Search</NuxtLink>
       <NuxtLink to="/label" class="t" active-class="on">Labels</NuxtLink>
+      <NuxtLink to="/author" class="t" active-class="on">Authors</NuxtLink>
       <NuxtLink to="/check" class="t" active-class="on">Check</NuxtLink>
       <NuxtLink to="/cards" class="t" active-class="on">Cards</NuxtLink>
       <NuxtLink to="/synonyms" class="t" active-class="on">Synonyms</NuxtLink>

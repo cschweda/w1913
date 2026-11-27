@@ -114,8 +114,34 @@ export const ProsodyFields = z.object({
 export const ProsodyEntry = LabelsEntry.extend(ProsodyFields.shape).strict();
 export type ProsodyEntry = z.infer<typeof ProsodyEntry>;
 
-/** Any edition line: the segment layer alone, or with the senses, syn, labels, prosody and forms layers. */
-export const EditionEntry = z.union([ProsodyEntry, LabelsEntry, SynEntry, SensesEntry, SegmentEntry]);
+/** The "quotes" layer (data 0.6): quotations found in senses and sub-senses, with their normalised authors. */
+export const QuoteFields = z.object({
+  quotes: z.array(
+    z
+      .object({
+        /** Index in `senses`, and of the sub-sense within it (null: the sense's own text). */
+        sense: z.number().int(),
+        sub: z.number().int().nullable(),
+        /** Offsets in that text: the quotation, and its author as printed. */
+        start: z.number().int(),
+        end: z.number().int(),
+        authorStart: z.number().int(),
+        authorEnd: z.number().int(),
+        kind: z.enum(["block", "inline"]),
+        author: z.string(),
+        /** The author's key and display name (authors.json), and a Scripture reference when it is one. */
+        authorKey: z.string(),
+        authorName: z.string(),
+        ref: z.string().nullable(),
+      })
+      .strict(),
+  ),
+});
+export const QuotesEntry = ProsodyEntry.extend(QuoteFields.shape).strict();
+export type QuotesEntry = z.infer<typeof QuotesEntry>;
+
+/** Any edition line: the segment layer alone, or with the senses, syn, labels, prosody, forms and quotes layers. */
+export const EditionEntry = z.union([QuotesEntry, ProsodyEntry, LabelsEntry, SynEntry, SensesEntry, SegmentEntry]);
 export type EditionEntry = z.infer<typeof EditionEntry>;
 
 export const Manifest = z
@@ -131,6 +157,8 @@ export const Manifest = z
     jsonl: z.object({ file: z.string(), sha256: z.string().regex(/^[0-9a-f]{64}$/), bytes: z.number().int() }),
     /** The label vocabulary, from data 0.4: code, name, kind, printed forms. */
     vocabulary: z.object({ file: z.string(), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).optional(),
+    /** The author table, from data 0.6: key, name, kind, printed forms. */
+    authors: z.object({ file: z.string(), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).optional(),
     licence: z.literal("CC0-1.0"),
     built: z.string(),
   })

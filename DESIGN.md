@@ -148,7 +148,7 @@ The answer key and `eval.json` are development artefacts. They are gitignored an
 5. **Quotation and author detection** is a heuristic with three outcomes, not two: a trailing name can close a quotation, cite an authority for the definition, or be ordinary text. An inline quotation's opening `"` must not be confused with a stress mark. Block quotations: text after a definition's closing full stop that ends in a short capitalised token (the author) and a full stop. Inline quotations: a `"…"` span, opened after a space and before a capital, followed by an author token. Authorities: an author token directly after a definition's full stop with no quotation between. Measure before trusting.
 6. **Cross-reference detection**: `See X`, `Cf. X`, `Same as X` followed by a capitalised word that is a headword. Cross-references often name a part of speech ("See Sublime, a."); resolve to the right homograph.
 7. **Labels**: match a closed vocabulary built by frequency count.
-8. **Authors are noisy**: thousands of distinct strings, a few hundred real authors. Normalise the top 300 by hand ("Shak." → Shakespeare).
+8. **Authors are noisy**: thousands of distinct strings, a few hundred real authors. Normalise the top 300 by hand ("Shak." → Shakespeare). Done in data 0.6 (`packages/data/src/quotes/authors.ts`): the 300 most frequent printed forms are covered by 254 authors and works (variants and typos merged, *Macualay* → Macaulay) plus *The Bible*, which collects every Scripture reference by book; ambiguous surnames (*Rogers*, *Taylor*, *Scott*) keep their printed form rather than a guess. 89.4% of quotations resolve to a named author.
 9. **Listed inflections are sparse.** Inflected lookup needs a rule-based suffix stripper checked against the headword list.
 10. **The tagged files have mis-nested tags** and two entry openers (`<p><hw>` and `<p>{ <hw>`). Tolerant tokenizer; never a strict XML/HTML parser.
 11. **Umlaut pseudo-variants and damaged pronunciations** on header and headword lines (above). Both are handled in the `segment` layer and counted in `report.json`.
@@ -332,7 +332,7 @@ Everything is built from the plain text. Features marked **P** rest on structure
 
 ### "How did the masters use it?"
 
-- **Quotation search and author pages** (H). They ship only when measured precision is acceptable; until then, quotations are simply part of the entry text.
+- **Quotation search and author pages** (H). They ship only when measured precision is acceptable; until then, quotations are simply part of the entry text. **Shipped in v0.10.0 (data 0.6).** Measured on 27 Nov 2026 against the answer key from the tagged edition (106,564 entries at least 0.90 similar; 45,602 key quotations): **97.7% precision** for a quotation with its correct author (block 97.8%, inline 97.0%), 87.3% recall; authorities 88.7% precision, so they are not used for anything and stay as printed. Entries show block quotations as `<blockquote>` with a linked `<cite>`; inline quotations keep their quote marks and link their author. `/author` lists the authors, `/author/<key>` an author's quotations in dictionary order; `/search?in=quotes` searches the 41,454 quotations, optionally by one author. A missed quotation (about one in eight) simply stays as plain text.
 
 ### "Show me something."
 
@@ -350,7 +350,7 @@ More play than tool, but reading a dictionary is how many writers find words, an
   - *By search*: the results of a definition search (`/cards?deck=q:slowly`). Shipped in v0.8.0.
   - The random deck leaves out entries whose every sense carries a natural-science label (zoology, botany, chemistry, mineralogy, anatomy and seven more): 68,572 entries are `card_ok` in data 0.4, against 79,594 before.
   - *Trail* and *Saved*: the visitor's own lists, built in the browser.
-  - *By author* (H): words quoted from one author, once quotation data ships.
+  - *By author*: words quoted from one author (`/cards?deck=author:milton`), each card with that author's quotation. Shipped in v0.10.0. Cards also show a quotation of at most 220 characters on the back, only when the word is shown first (it usually contains the word).
 - **`card_ok`.** A uniform draw from every headword is mostly variant spellings, bare cross-references, and species names. An entry is `card_ok` when it has at least one definition that is not only a cross-reference and is at least 40 characters long. Once labels exist (data 0.4), entries whose only senses carry natural-science subject labels are excluded from the random deck; they remain available as label decks. The thresholds are starting values; the count of `card_ok` entries goes in `report.json`.
 - **Reverse mode:** show the definition first and reveal the word. It practises "what's the word for…".
 - **Self-rating:** two buttons on the back, "Knew it" and "New to me". "New to me" adds the word to the saved list. There is no scheduling and no score.
@@ -546,7 +546,7 @@ Data and site advance together, one layer at a time. The edition is never "finis
 ## 8. Open questions
 
 1. Whether to register `w1913.dev` / `w1913.app` as well. (`w1913.com` was registered at DNSimple on 24 Nov 2026.)
-2. What precision is good enough to ship quotation search? (Proposed starting bar: 95% on the scored sample.)
+2. What precision is good enough to ship quotation search? (Proposed starting bar: 95% on the scored sample.) **Answered:** 95% was the bar; data 0.6 measured 97.7% (§2 problem 5 and §4).
 3. Where is the edition published? (Default: release assets on `cschweda/w1913`; npm is the alternative.)
 4. Is meaning-based search worth a model dependency?
 5. Should the trail survive closing the tab? (Default: no. It lasts for the tab's session; saved lists are the permanent record.)

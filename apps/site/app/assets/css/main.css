@@ -117,3 +117,12 @@ a.rare:hover, a.rare:focus-visible { border-bottom-style: solid; }
 a.chip { display: inline-block; margin: 0 4px 0 0; padding: 0 7px; border: 1px solid var(--mu); font-size: .72em; line-height: 1.6; letter-spacing: .02em; color: var(--mu); vertical-align: .12em; white-space: nowrap; }
 a.chip:hover { color: var(--ac); border-color: var(--ac); }
 mark { background: color-mix(in srgb, var(--ac) 28%, transparent); color: var(--fg); padding: 0 1px; }
+
+/* Quotations (data 0.6; shared/render.ts quotedHtml): 17px, secondary colour (DESIGN.md §4a). */
+.qt { margin: 10px 0 0; padding: 2px 0 2px 16px; border-left: 2px solid var(--ln); font-size: 17px; line-height: 1.55; color: var(--mu); }
+.qt p { margin: 0; }
+.qt + .st, .qt + .qt { margin-top: 12px; }
+.qa { margin-top: 2px; font-size: 15px; }
+.qa::before { content: "\2014\00a0"; }
+cite { font-style: normal; }
+cite a { color: var(--fg); }

@@ -1,7 +1,7 @@
 ![w1913.com: W for Webster's, 1913 for the Revised Unabridged edition. A dictionary for writers.](assets/og-image.png)
 
 [![Live: w1913.com](https://img.shields.io/badge/live-w1913.com-c8102e.svg)](https://w1913.com)
-[![Version 0.9.0](https://img.shields.io/badge/version-0.9.0-111111.svg)](CHANGELOG.md)
+[![Version 0.10.0](https://img.shields.io/badge/version-0.10.0-111111.svg)](CHANGELOG.md)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-111111.svg)](LICENSE)
 [![Data: CC0 1.0](https://img.shields.io/badge/data-CC0%201.0-111111.svg)](LICENSE-DATA)
 [![Node 24](https://img.shields.io/badge/node-24-111111.svg)](.nvmrc)
@@ -26,6 +26,7 @@ The 1913 Webster's is loved for its discursive definitions, its literary quotati
 
   ![The entry for Dismay: the headword with Say it, syllables, decoded abbreviations, numbered senses with "appall" and "consternation" underlined as unusual words, and the synonyms.](docs/images/entry-dismay.jpg)
 - **"What's the word for…?"** ([/search](https://w1913.com/search?q=walk+idly)): search inside every definition, stemmed and ranked. *walk idly* finds **saunter**, **stroll**, **stroam**; *dread of water* finds **hydrophobia**. It matches the dictionary's own words, and says so.
+- **"How did the masters use it?"**: the dictionary's 41,454 quotations shown as quotations, each author linked. [/author](https://w1913.com/author) lists the writers it quotes (Shakespeare 6,106 times, the Bible 3,047, Milton 3,029), each with their quotations in dictionary order and a card deck; [search the quotations](https://w1913.com/search?q=sleep&in=quotes) by word and by author. Measured at 97.7% precision against the older tagged edition before shipping.
 - **"I need a word with this rhythm"**: filter search results, or a word's synonyms, by syllables and stress: [synonyms of *lofty*, two syllables, stress on the first](https://w1913.com/search?like=lofty&syl=2&stress=1) gives **haughty** and **stately**.
 - **Period check** ([/check](https://w1913.com/check)): paste a passage to see which words the 1913 dictionary does not contain (*smartphone*, *taxi*, *airplane*). It runs in your browser; the text is never sent anywhere.
 - **Inflected forms**: [w1913.com/walked](https://w1913.com/walked) opens *walk*, *goeth* opens *go*, *went* and *oxen* come from the forms the dictionary lists.
@@ -54,15 +55,14 @@ Each phase adds one layer to the edition and the features that rest on it (DESIG
 
 | A writer asks | W1913 will answer with | Phase |
 |---|---|---|
-| How did the masters use it? | Quotations, searchable and browsable by author | 5 |
-| Teach me a word. | More card decks: by author (5), from saved words, with "Knew it" / "New to me" (6) | 5–6 |
+| Teach me a word. | More card decks: from saved words, with "Knew it" / "New to me" | 6 |
 | Can my own tools use it? | The edition as downloads and static files for Drafter and the Markdown editor, offline (no API) | 7 |
 
 ## How it is built
 
 Two packages in one pnpm workspace:
 
-- **`packages/data`** (plain TypeScript, run by Node 24) turns Project Gutenberg eBook #29765 into a versioned, layered edition of the dictionary: `w1913-<version>.jsonl`, one entry per line, validated against a schema. The site currently serves **edition 0.5**: 113,409 entries with their senses, synonyms, labels, syllables and stress, and listed inflections.
+- **`packages/data`** (plain TypeScript, run by Node 24) turns Project Gutenberg eBook #29765 into a versioned, layered edition of the dictionary: `w1913-<version>.jsonl`, one entry per line, validated against a schema. The site currently serves **edition 0.6**: 113,409 entries with their senses, synonyms, labels, syllables and stress, listed inflections, and quotations with their authors.
 - **`apps/site`** (Nuxt 4, Nuxt UI v4) imports the pinned edition into a read-only SQLite database, renders every entry to semantic HTML once at import, and serves it with server-side rendering.
 
 Every published word comes from #29765, which Project Gutenberg catalogues as public domain. The older tagged edition (#660–670) is used only to measure the parser's accuracy and never supplies data; DESIGN.md §2 explains why. What the source text turned out to be, including its damage and gaps, is in [docs/phase-0-notes.md](docs/phase-0-notes.md).
@@ -92,6 +92,7 @@ pnpm lint && pnpm typecheck
 pnpm --filter @w1913/data run edition       # build the edition releases (cached when unchanged)
 pnpm --filter @w1913/site run db:import     # write the SQLite database for the pinned edition
 pnpm --filter @w1913/data run phase0        # source audit → cache/phase0/report.json
+pnpm --filter @w1913/data run eval:quotes   # quotation precision and recall against the tagged edition → cache/eval/eval.json (needs cache/tagged)
 ```
 
 ## Versions and deploying
@@ -107,7 +108,7 @@ cd ~/w1913.com          # the checkout
 ./rebuild.sh --rollback # back to the previous release
 ```
 
-Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.9.0 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
+Each deploy builds a complete new release beside the live one, runs it on a spare port, and switches only if it answers. Then it checks the live port and the public address through nginx. Every check requires the new version and commit, and the smoke paths to answer. A failure at the live port rolls back automatically. The last line names what is live: `Deployed W1913 v0.10.0 (<commit>)`. `./rebuild.sh --help` lists the settings; DESIGN.md §3 "Deploying" explains the layout.
 
 ## Licence
 
