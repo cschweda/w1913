@@ -194,6 +194,10 @@ Why split:
 - nginx caches entry pages; cache purged on deploy. Rate limiting at nginx (`limit_req`).
 - The build reads only the canonical file. A separate `pnpm eval` command reads the tagged files and scores the build; CI does not need them.
 
+### Settings
+
+The main settings live in one file at the repository root, `w1913.config.ts`: the site's name and address, the edition the site pins, ports, deploy settings, interface limits (trail length, neighbors, suggestions), the reserved route words, cache lifetimes, and the colour tokens. Its comments say what each setting does, what changing it means, and which settings must not change. The site, the import step, `pnpm dev` and `rebuild.sh` all read it; PM2 receives its values from `rebuild.sh`.
+
 ### Deploying
 
 Deploys are manual: after a push to `main`, run `./rebuild.sh` in the checkout on the droplet. Forge's Quick Deploy stays off for this site.
@@ -384,6 +388,7 @@ Programs such as Drafter or a Markdown editor need to look words up. W1913 gives
 Checked against the Drafter repository (27 Nov 2026):
 
 - **Desktop (Electron)** runs the drafter.dev app from its own files, already bundles an offline spellcheck dictionary, and promises that its only network requests are to GitHub for updates. The W1913 lookup build fits the same pattern: an optional download inside Drafter, from the W1913 GitHub release (a host the desktop app already uses), stored next to its other data and queried locally. Drafter's privacy notes gain one line.
+- **The Markdown editor** is web-only, so it works like drafter.dev: it serves the lookup build from its own origin and caches it for offline use.
 - **Web (drafter.dev)** allows network requests only to its own origin (`connect-src 'self'`), so it cannot call w1913.com, by design. drafter.dev would serve the lookup build itself and cache it for offline use, like the rest of the app.
 - In both, looking a word up sends nothing: no word from a script leaves the writer's device, which an API could not promise.
 

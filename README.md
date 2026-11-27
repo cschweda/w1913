@@ -57,6 +57,10 @@ pnpm --filter @w1913/data run edition       # build the pinned edition release
 
 The canonical source is not committed. The download step fetches it, or uses a copy placed by hand at `cache/sources/29765.txt`, and verifies its SHA-256 either way.
 
+## Settings
+
+The main settings live in [`w1913.config.ts`](w1913.config.ts) at the repository root: the site's name and address, the edition the site serves, ports, deploy settings, interface limits, route words, and the colour theme. Its comments say what each setting does, what changing it means, and what not to change.
+
 ## Deploying
 
 The site runs under PM2 on a Forge-provisioned DigitalOcean droplet. After a push to `main`, on the droplet:

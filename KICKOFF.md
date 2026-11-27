@@ -167,6 +167,9 @@ code they test.
 rebuild.sh on the droplet depends on these. Build them with apps/site and
 keep them working:
 - Package names @w1913/data and @w1913/site.
+- Settings live in w1913.config.ts at the repository root (the pinned edition,
+  ports, deploy settings, limits, route words, colours). Read values from it;
+  never copy them into other files. Shell scripts use scripts/config-get.ts.
 - `pnpm --filter @w1913/data run edition`: verifies cache/sources/29765.txt
   against checksums.json (downloading only if missing) and builds the
   edition version the site pins.

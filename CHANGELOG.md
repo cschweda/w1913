@@ -14,6 +14,16 @@ Design history (Drafts 2–5.4) is kept in DESIGN.md §9.
 
 ### Added
 
+- **Phase 1** (`apps/site`, Nuxt 4 + Nuxt UI v4): entry pages at root URLs (`w1913.com/sublime`; route words under `/w/`), all homographs on one page, numbered senses with sub-senses, notes, inflections, spellings and etymology, linked cross-references, neighbors, the trail, the on-this-page list, look up by selection (exact matches), autocomplete with `/` and Cmd/Ctrl-K, "did you mean" on a miss, browser search-engine registration, dark and light themes, self-hosted Inter. WCAG 2.2 AA: no axe violations on any page type.
+  - `db:import`: renders every entry to semantic HTML once and writes the read-only SQLite database (96 MB, about 1 s).
+  - `/healthz` for the deploy's health checks.
+- **Data 0.1** (`segment`, all 113,409 entries) and **Data 0.2** (`senses`): etymology, inflections, spelling notes, labels, numbered senses, lettered sub-senses, notes, the Syn. paragraph, and cross-references (96.4% resolve to an entry). 50 golden entries, hand-checked.
+- `w1913.config.ts`: one file at the root for the main settings, with comments on what to change and what not to.
+
+### Fixed
+
+- Header parsing: the part of speech is no longer found inside an etymology ("Been. Etym: [... p. p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
+
 - **Phase 0** (`packages/data`): pnpm workspace scaffold (pnpm 12.16.1, Node 24 running TypeScript directly, Vitest, ESLint).
   - `download`: verifies the canonical file against its pinned SHA-256, fetches the tagged files for evaluation from gutenberg.org or PG's mirror, and records their checksums in `checksums.json`.
   - Segmenter: lossless split of #29765 into 113,409 entries, with header parsing (display headword, variants, part of speech), umlaut pseudo-variant detection, and 12 golden entries.
