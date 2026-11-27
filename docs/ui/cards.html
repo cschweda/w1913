@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>W1913 mockup: cards</title>
+<!-- Static reference mockup for W1913 (DESIGN.md section 4a). Entry text is illustrative. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap">
+<style>
+body{margin:0;background:var(--bg)}
+body,.dk{--bg:#0d0d0d;--fg:#f2f2f2;--mu:#a3a3a3;--ln:#303030;--ac:#ff5a47;--on:#0d0d0d}
+.lt{--bg:#fafafa;--fg:#111111;--mu:#595959;--ln:#d0d0d0;--ac:#c8102e;--on:#ffffff}
+a{color:inherit;text-decoration:none}a:hover{color:var(--ac)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+.t{display:inline-flex;align-items:center;min-height:44px}
+.x{border-bottom:1px solid var(--ac)}
+.cap{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--mu)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.b{min-height:44px;padding:0 16px;background:transparent;color:var(--fg);border:1px solid var(--fg);border-radius:0;font:inherit;font-size:14px;cursor:pointer}
+.on{background:var(--fg);color:var(--bg)}
+</style>
+</head>
+<body>
+<div style="background: var(--bg); color: var(--fg); font-family: Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; padding: 16px clamp(20px, 5.5vw, 80px); border-bottom: 1px solid var(--ln)">
+<a href="#" class="t" style="font-size: 22px; font-weight: 700; letter-spacing: -0.02em">w1913</a>
+<form role="search" style="flex: 1 1 280px; display: flex; align-items: center; gap: 12px; margin: 0">
+<label for="qk" class="cap">Look up</label>
+<input id="qk" type="search" style="flex: 1; min-width: 0; height: 44px; background: transparent; border: 0; border-bottom: 1px solid var(--fg); border-radius: 0; color: var(--fg); font: inherit; font-size: 16px">
+<span style="font-size: 12px; color: var(--mu)">/ or Ctrl K</span>
+</form>
+<nav aria-label="Sections" style="display: flex; flex-wrap: wrap; gap: 0 28px; font-size: 14px">
+<a href="#" class="t">Synonyms</a>
+<a href="#" class="t">Authors</a>
+<a href="#" class="t">Labels</a>
+<a href="#" class="t">Check</a>
+<a href="#" class="t" aria-current="page" style="font-weight: 700; box-shadow: inset 0 -2px 0 var(--ac)">Cards</a>
+<a href="#" class="t">Saved</a>
+</nav>
+<button type="button" class="b" id="theme">Light mode</button>
+</header>
+<main style="max-width: 1120px; margin: 0 auto; box-sizing: border-box; padding: 28px clamp(20px, 5.5vw, 80px) 72px">
+<h1 class="cap" style="margin: 0; font-weight: 400">Cards</h1>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 40px; margin-top: 12px">
+<div role="group" aria-label="Deck" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<span class="cap" style="margin-right: 8px">Deck</span>
+<button type="button" class="b on" aria-pressed="true">Random</button>
+<button type="button" class="b" aria-pressed="false">Poetic</button>
+<button type="button" class="b" aria-pressed="false">Nautical</button>
+<button type="button" class="b" aria-pressed="false">Obsolete</button>
+<button type="button" class="b" aria-pressed="false">Saved</button>
+<button type="button" class="b" aria-pressed="false">Trail</button>
+<a href="#" class="t x" style="margin-left: 8px; font-size: 14px">All labels</a>
+</div>
+<div role="group" aria-label="Show first" style="display: flex; align-items: center">
+<span class="cap" style="margin-right: 16px">Show first</span>
+<button type="button" class="b on" aria-pressed="true">Word</button>
+<button type="button" class="b" aria-pressed="false" style="margin-left: -1px">Definition</button>
+</div>
+</div>
+
+<section aria-label="Card" style="display: flex; flex-direction: column; min-height: 560px; margin-top: 24px; border: 1px solid var(--fg)">
+<div class="cap" style="display: flex; justify-content: space-between; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--ln)"><span>Random deck</span><span>Card 3 of 20</span></div>
+<div id="front" style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 40px clamp(20px, 4vw, 56px)">
+<h2 style="margin: 0; font-size: clamp(72px, 12vw, 176px); line-height: 0.9; font-weight: 700; letter-spacing: -0.045em">Saunter</h2>
+<div aria-hidden="true" style="width: 96px; height: 8px; background: var(--ac); margin: 28px 0 16px"></div>
+<p style="margin: 0; font-size: 15px; color: var(--mu)">Say what it means, then flip the card.</p>
+</div>
+<div id="back" style="flex: 1; display: none; flex-direction: column; gap: 20px; padding: 32px clamp(20px, 4vw, 56px) 40px">
+<h2 style="margin: 0; font-size: 40px; font-weight: 700; letter-spacing: -0.03em"><span aria-hidden="true">Saun″ter</span><span class="vh">Saunter</span> <abbr title="intransitive verb" style="font-size: 18px; font-weight: 400; color: var(--mu)">v. i.</abbr></h2>
+<p style="margin: 0; font-size: 26px; line-height: 1.35; letter-spacing: -0.01em">To wander or walk about idly and in a leisurely or lazy manner; to lounge; to stroll; to loiter.</p>
+<figure style="margin: 0; font-size: 17px; line-height: 1.5; color: var(--mu)"><blockquote style="margin: 0">One could lie under elm trees in a lawn, or saunter in meadows by the side of a stream.</blockquote><figcaption><cite style="font-style: normal; font-size: 14px">Masson</cite></figcaption></figure>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0 24px; padding-top: 12px; border-top: 1px solid var(--ln); font-size: 20px">
+<span class="cap" style="margin-right: 8px">Similar</span>
+<a href="#" class="t">loiter</a><a href="#" class="t">linger</a><a href="#" class="t">stroll</a><a href="#" class="t">wander</a>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: auto">
+<button type="button" class="b">Knew it</button>
+<button type="button" class="b">New to me · save</button>
+<a href="entry-full.html" class="t x" style="margin-left: 12px; font-size: 14px">Open the full entry</a>
+</div>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px">
+<button type="button" class="b" style="min-height: 56px">Previous</button>
+<button type="button" class="b" id="flip" aria-expanded="false" aria-controls="back" style="flex: 1 1 240px; min-height: 56px; background: var(--ac); color: var(--on); border-color: var(--ac); font-size: 16px; font-weight: 700">Show definition</button>
+<button type="button" class="b" style="min-height: 56px">Next</button>
+</div>
+<p style="margin: 16px 0 0; font-size: 13px; color: var(--mu)">Space or Enter flips the card. Left and right arrows move through the deck.</p>
+</main>
+</div>
+<script>
+(function () {
+  var t = document.getElementById('theme');
+  t.addEventListener('click', function () {
+    var light = document.body.classList.toggle('lt');
+    t.textContent = light ? 'Dark mode' : 'Light mode';
+  });
+  var f = document.getElementById('flip'), front = document.getElementById('front'), back = document.getElementById('back');
+  function flip() {
+    var show = back.style.display === 'none';
+    back.style.display = show ? 'flex' : 'none';
+    front.style.display = show ? 'none' : 'flex';
+    f.setAttribute('aria-expanded', show ? 'true' : 'false');
+    f.textContent = show ? 'Show word' : 'Show definition';
+  }
+  f.addEventListener('click', flip);
+  document.addEventListener('keydown', function (e) {
+    var tag = e.target.tagName;
+    if (e.key === ' ' && tag !== 'INPUT' && tag !== 'BUTTON' && tag !== 'A') { e.preventDefault(); flip(); }
+  });
+})();
+</script>
+</body>
+</html>

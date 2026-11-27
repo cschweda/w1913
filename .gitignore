@@ -1,0 +1,22 @@
+# Sources, built editions, the database, and evaluation outputs (DESIGN.md §2–3)
+/cache/
+eval.json
+*.sqlite
+*.sqlite-*
+
+# Dependencies and build output
+node_modules/
+.nuxt/
+.output/
+dist/
+coverage/
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+
+# Local environment
+.env
+.env.*
+!.env.example

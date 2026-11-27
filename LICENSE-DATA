@@ -1,0 +1,22 @@
+W1913 edition data: CC0 1.0 Universal
+
+The dictionary edition published by this project (the w1913-<version>.jsonl
+files and their manifest.json and report.json) is dedicated to the public
+domain under the Creative Commons CC0 1.0 Universal Public Domain Dedication.
+
+  Summary: https://creativecommons.org/publicdomain/zero/1.0/
+  Legal code: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Scope. The underlying text of Webster's Revised Unabridged Dictionary (1913)
+is already in the public domain in the United States; this project claims no
+rights in it. CC0 applies to what this project adds: the structure, tagging,
+and corrections. To the extent possible under law, Christopher Schweda has
+waived all copyright and related or neighboring rights to that work.
+
+Source. Every field in the edition is derived from Project Gutenberg eBook
+#29765, catalogued by Project Gutenberg as public domain in the USA. No data
+from Project Gutenberg etexts #660-670 (v0.50) or #673, or from GCIDE, is
+included (see DESIGN.md section 2).
+
+The code, documentation, and design in this repository are licensed
+separately under the MIT License; see LICENSE.
