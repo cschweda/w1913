@@ -1,0 +1,26 @@
+{
+  "name": "@w1913/site",
+  "version": "0.1.0",
+  "private": true,
+  "description": "w1913.com: a writer's tool built on Webster's Revised Unabridged Dictionary (1913).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3913",
+    "build": "nuxt build",
+    "preview": "node .output/server/index.mjs",
+    "db:import": "node scripts/db-import.ts",
+    "typecheck": "nuxt typecheck",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.13.1",
+    "better-sqlite3": "^13.2.0",
+    "nuxt": "^4.7.0"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.160",
+    "@types/better-sqlite3": "^9.6.0",
+    "vue-tsc": "^3.3.14"
+  }
+}

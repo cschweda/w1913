@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* Inter, self-hosted (SIL Open Font License, public/fonts/Inter-LICENSE.txt). */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/InterVariable-Italic.woff2") format("woff2");
+}
+
+/* Tokens (DESIGN.md §4a): --bg --fg --mu --ln --ac --on are generated from
+   w1913.config.ts (theme) by nuxt.config.ts. Change colours there, not here. */
+:root {
+  --ui-bg: var(--bg); --ui-bg-elevated: var(--bg); --ui-bg-muted: var(--bg); --ui-bg-accented: var(--ln);
+  --ui-text: var(--fg); --ui-text-highlighted: var(--fg); --ui-text-muted: var(--mu); --ui-text-dimmed: var(--mu);
+  --ui-border: var(--ln); --ui-border-accented: var(--mu);
+  --ui-primary: var(--ac); --ui-text-inverted: var(--on);
+  --ui-radius: 0;
+  --font-sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+html { background: var(--bg); color: var(--fg); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+body { margin: 0; }
+::selection { background: var(--ac); color: var(--on); }
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--ac); }
+:focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+
+/* Shared pieces from the mockups. */
+.t { display: inline-flex; align-items: center; min-height: 44px; }
+.x { border-bottom: 1px solid var(--ac); }
+.cap { font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--mu); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.btn { min-height: 44px; padding: 0 16px; background: transparent; color: var(--fg); border: 1px solid var(--fg); border-radius: 0; font: inherit; font-size: 14px; cursor: pointer; }
+.btn-quiet { border-color: var(--mu); }
+.btn:hover { border-color: var(--ac); color: var(--ac); }
+.pad { padding-left: clamp(20px, 5.5vw, 80px); padding-right: clamp(20px, 5.5vw, 80px); }
+
+/* Entry body (rendered at import; shared/render.ts). */
+.sec { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--fg); }
+.sec:first-of-type { margin-top: 32px; }
+.hh { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+.hh abbr { font-size: 18px; font-weight: 400; color: var(--mu); text-decoration: none; margin-left: .35em; letter-spacing: 0; }
+.m { margin: 8px 0 0; font-size: 15px; line-height: 1.5; color: var(--mu); }
+.s { margin: 20px 0 0; padding: 0 0 0 32px; font-size: 20px; line-height: 1.5; list-style: decimal; }
+.s > li { padding: 0 0 20px 8px; }
+.s > li:last-child { padding-bottom: 0; }
+.s > li::marker { color: var(--ac); font-weight: 700; font-size: 15px; }
+.st { margin: 0; }
+.st + .st { margin-top: 12px; }
+.d { margin: 20px 0 0; font-size: 20px; line-height: 1.5; }
+.sub { margin: 8px 0 0; padding-left: 28px; list-style: lower-alpha; }
+.sub > li { padding: 0 0 8px 4px; }
+.sub > li::marker { color: var(--mu); font-size: 15px; }
+.note { margin: 16px 0 0; padding-left: 16px; border-left: 2px solid var(--ln); font-size: 17px; line-height: 1.5; }
+.note .cap { display: block; margin-bottom: 4px; }
+.note p { margin: 0; }
+.syn { margin: 24px 0 0; font-size: 17px; line-height: 1.5; }
+.syn .cap { margin-right: 12px; }
+:target { scroll-margin-top: 24px; }
+li:target, .sec:target > .hh { background: color-mix(in srgb, var(--ac) 12%, transparent); }

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
+  <ShortName>W1913</ShortName>
+  <Description>Webster's Revised Unabridged Dictionary (1913)</Description>
+  <InputEncoding>UTF-8</InputEncoding>
+  <Image height="32" width="32" type="image/svg+xml">https://w1913.com/favicon.svg</Image>
+  <Url type="text/html" method="get" template="https://w1913.com/w/go?q={searchTerms}"/>
+</OpenSearchDescription>
