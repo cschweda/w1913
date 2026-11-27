@@ -10,6 +10,7 @@
     "edition": "node src/cli/edition.ts",
     "eval": "node src/eval/cli.ts",
     "eval:quotes": "node src/eval/quotes-cli.ts",
+    "eval:colloc": "node src/eval/colloc-cli.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json"
   },

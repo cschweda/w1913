@@ -17,6 +17,31 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-27
+
+Phrases: the collocations planned for Phase 5 ("Bill of fare", "Apple of discord", "To play
+possum"), found, shown and looked up.
+
+### Added
+
+- **Phrases list on entries.** The 1913 printed phrases with their own definitions in bold after
+  the senses; the plain text runs them on into the last sense (*bill*'s sense 6 was 4,500
+  characters). Each entry now ends its senses where its phrases begin and lists them in a
+  **Phrases** section (`<dl>`, each phrase a `<dfn>` with its own anchor), labels as chips,
+  quotations and links kept. 24,628 phrases on 7,931 entries.
+- **Phrase lookup.** `/bill-of-fare` goes to *Bill of fare* under *bill*; typing a phrase with a
+  space ("apple of") offers phrases in the lookup box after the headwords.
+- Cards use the definition without its phrases.
+- **`pnpm --filter @w1913/data run eval:colloc`** measures the heuristic against the tagged
+  edition's `<col>` markup (development only, as before). **96.7% precision, 89.2% recall**
+  (23,487 of 26,341 key phrases), above the 95% bar used for quotations.
+
+### Data
+
+- **Edition 0.7**: the `collocations` layer. For each run of phrases: the text that holds it
+  (sense, sub-sense or note), its offsets, its phrases, and the word a "See under …" definition
+  points to. Parser 0.6.0. The site is pinned to 0.7; shards move to `/data/0.7/`.
+
 ## [0.12.0] - 2026-11-27
 
 Phase 7, "Can my own tools use it?": offline lookup and static data, with no API (DESIGN.md §4b).

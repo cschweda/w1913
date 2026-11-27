@@ -12,12 +12,12 @@ import { slice, type SliceName } from "../audit/slices.ts";
 import { segment } from "../segment/segment.ts";
 import { EditionEntry, Manifest, type Layer } from "./schema.ts";
 import { toSegmentEntries } from "./segment-layer.ts";
-import { makeResolver, toQuotesEntry, toProsodyEntry, toLabelsEntry, toSensesEntry, toSynEntry } from "./senses-layer.ts";
+import { makeResolver, toCollocationsEntry, toQuotesEntry, toProsodyEntry, toLabelsEntry, toSensesEntry, toSynEntry } from "./senses-layer.ts";
 import { LABELS } from "../labels/vocabulary.ts";
 import { AUTHORS, BIBLE } from "../quotes/authors.ts";
 
 /** Bump whenever a parser change can alter the edition's content. */
-export const PARSER_VERSION = "0.5.0";
+export const PARSER_VERSION = "0.6.0";
 
 export interface ReleaseSpec {
   version: string;
@@ -36,6 +36,7 @@ export const RELEASES: readonly ReleaseSpec[] = [
   { version: "0.4", layers: ["segment", "senses", "syn", "labels"], scope: "all" },
   { version: "0.5", layers: ["segment", "senses", "syn", "labels", "prosody", "forms"], scope: "all" },
   { version: "0.6", layers: ["segment", "senses", "syn", "labels", "prosody", "forms", "quotes"], scope: "all" },
+  { version: "0.7", layers: ["segment", "senses", "syn", "labels", "prosody", "forms", "quotes", "collocations"], scope: "all" },
 ];
 
 export interface BuildResult {
@@ -87,7 +88,8 @@ export async function buildRelease(spec: ReleaseSpec, opts: { force?: boolean } 
   const withSyn = resolve && spec.layers.includes("syn") ? withSenses.map((e) => toSynEntry(e as ReturnType<typeof toSensesEntry>, resolve)) : withSenses;
   const withLabels = spec.layers.includes("labels") ? withSyn.map((e) => toLabelsEntry(e as ReturnType<typeof toSynEntry>)) : withSyn;
   const withProsody = spec.layers.includes("prosody") ? withLabels.map((e) => toProsodyEntry(e as ReturnType<typeof toLabelsEntry>)) : withLabels;
-  const all = spec.layers.includes("quotes") ? withProsody.map((e) => toQuotesEntry(e as ReturnType<typeof toProsodyEntry>)) : withProsody;
+  const withQuotes = spec.layers.includes("quotes") ? withProsody.map((e) => toQuotesEntry(e as ReturnType<typeof toProsodyEntry>)) : withProsody;
+  const all = resolve && spec.layers.includes("collocations") ? withQuotes.map((e) => toCollocationsEntry(e as ReturnType<typeof toQuotesEntry>, resolve)) : withQuotes;
   const chosen =
     spec.scope === "all"
       ? all

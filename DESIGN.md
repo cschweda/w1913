@@ -286,7 +286,8 @@ The proofreading queue and anything else that quotes the tagged edition goes onl
 | 0.3 | `syn` | synonym words, "see" targets, essays | Phase 2 |
 | 0.4 | `labels` | usage and subject labels per sense | Phase 3 |
 | 0.5 | `prosody` | syllable count, stress pattern | Phase 4 |
-| 0.6 | `quotes` | quotations, authors, collocations, refined cross-references | Phase 5 |
+| 0.6 | `quotes` | quotations, authors | Phase 5 |
+| 0.7 | `collocations` | phrases defined inside an entry, with offsets and "See under" targets | Phase 5 (shipped in v0.13.0) |
 | 1.0 | n/a | First reviewed corrections pass applied | n/a |
 
 Every layer is derived from the canonical plain text.
@@ -308,7 +309,7 @@ Everything is built from the plain text. Features marked **P** rest on structure
 - **Entry page** (P). Numbered senses as an ordered list; etymology and synonyms set apart; all homographs on one page. Quotations as `<blockquote>` with `<cite>` (H).
 - **Linked cross-references** (H).
 - **Decoded abbreviations** (P): `v. t.`, `Obs.`, `Naut.`, `Shak.` as `<abbr>`.
-- **One-step lookup** (P): root URLs; `/` or Cmd/Ctrl-K; autocomplete over headwords and variants; suffix-stripping for inflected forms; "did you mean" on a miss. Collocations in autocomplete ("Sublime Porte") (H).
+- **One-step lookup** (P): root URLs; `/` or Cmd/Ctrl-K; autocomplete over headwords and variants; suffix-stripping for inflected forms; "did you mean" on a miss. Collocations in autocomplete ("Sublime Porte") (H). **Phrases shipped in v0.13.0 (data 0.7):** typing a space offers phrases after the headwords ("apple of" → *Apple of discord*), and `/bill-of-fare` goes to the phrase's anchor under *bill*.
 - **Browser search-engine registration** (P).
 
 ### "Is there a better word?"
@@ -333,6 +334,7 @@ Everything is built from the plain text. Features marked **P** rest on structure
 ### "How did the masters use it?"
 
 - **Quotation search and author pages** (H). They ship only when measured precision is acceptable; until then, quotations are simply part of the entry text. **Shipped in v0.10.0 (data 0.6).** Measured on 27 Nov 2026 against the answer key from the tagged edition (106,564 entries at least 0.90 similar; 45,602 key quotations): **97.7% precision** for a quotation with its correct author (block 97.8%, inline 97.0%), 87.3% recall; authorities 88.7% precision, so they are not used for anything and stay as printed. Entries show block quotations as `<blockquote>` with a linked `<cite>`; inline quotations keep their quote marks and link their author. `/author` lists the authors, `/author/<key>` an author's quotations in dictionary order; `/search?in=quotes` searches the 41,454 quotations, optionally by one author. A missed quotation (about one in eight) simply stays as plain text.
+- **Phrases (collocations)** (H). **Shipped in v0.13.0 (data 0.7).** The plain text runs phrases on after the senses (` -- Bill of fare, a written…`), the first of a run often without its dash. The heuristic (`packages/data/src/collocations`): a phrase after ` -- `, or unmarked at a sentence start when it uses the headword, has at most five words and is followed by a lower-case definition, a label, "(a)" or ". See"; never a run-in derivative (", adv."), never inside a quotation; "X, or Y," and lists sharing a word share one definition. Measured on 27 Nov 2026 against the tagged edition's `<col>` markup (106,564 entries; 26,341 key phrases): **96.7% precision, 89.2% recall**; many of the remaining "errors" are the key's own splits and spelling differences. Entries end the sense where its phrases begin and list them in a Phrases section; a missed phrase stays in the sense text as printed.
 
 ### "Show me something."
 
@@ -436,7 +438,8 @@ Every module is optional. The page must look complete with none of them, which i
 | Synonyms section (words, essay pointer, reverse listings, compare) | Data 0.3 (Phase 2) | `Syn.` shown as a plain line in the entry |
 | Label chips on senses; "Labels here" | Data 0.4 (Phase 3) | Labels shown inline as the source prints them: `[Poetic]`, `(Chem.)` |
 | Prosody line; rhythm filter in Synonyms | Data 0.5 (Phase 4) | Omitted |
-| Quotations as `<blockquote>` with linked `<cite>`; "Quoted here"; Collocations section | Data 0.6 (Phase 5) | Quotations and collocations shown as plain entry text |
+| Quotations as `<blockquote>` with linked `<cite>`; "Quoted here" | Data 0.6 (Phase 5) | Quotations shown as plain entry text |
+| Phrases section (collocations), phrase lookup | Data 0.7 (Phase 5, v0.13.0) | Phrases run on inside the last sense, as printed |
 | Save word, copy with citation | Phase 6 | Omitted |
 | Cards: random and trail decks, synonyms on the back, reverse mode | Data 0.3 (Phase 2) | n/a |
 | Cards: label and search decks | Data 0.4 (Phase 3) | Deck buttons for labels omitted |

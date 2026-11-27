@@ -8,7 +8,7 @@ leaves their device.
 ```ts
 import { createLookup } from "@w1913/lookup";
 
-const build = await (await fetch("/w1913-lookup-0.6.json")).json(); // or readFile in Electron/Node
+const build = await (await fetch("/w1913-lookup-0.7.json")).json(); // or readFile in Electron/Node
 const dictionary = createLookup(build);
 
 dictionary.lookup("goeth");
@@ -21,7 +21,7 @@ dictionary.suggest("saun");      // [{ headword: "Saunter", slug: "saunter" }, â
 
 ## The data
 
-- **The lookup build**, `w1913-lookup-<edition>.json` (22.7 MB; 7.5 MB gzipped, edition 0.6):
+- **The lookup build**, `w1913-lookup-<edition>.json` (22.7 MB; 7.5 MB gzipped, edition 0.7):
   every headword, variant and listed inflection; every entry's part of speech and senses, with
   block quotations left out. Published with each W1913 release. CC0 1.0.
 - **Static shards** at `https://w1913.com/data/<edition>/<prefix>.json` (362 files, one per
@@ -30,7 +30,7 @@ dictionary.suggest("saun");      // [{ headword: "Saunter", slug: "saunter" }, â
 
 ```ts
 import { createShardedLookup } from "@w1913/lookup";
-const dictionary = createShardedLookup((prefix) => fetch(`https://w1913.com/data/0.6/${prefix}.json`).then((r) => (r.ok ? r.json() : null)));
+const dictionary = createShardedLookup((prefix) => fetch(`https://w1913.com/data/0.7/${prefix}.json`).then((r) => (r.ok ? r.json() : null)));
 await dictionary.lookup("walked");
 ```
 

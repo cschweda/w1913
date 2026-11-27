@@ -2,7 +2,7 @@
 // the "segment" layer only; later layers add optional fields (DESIGN.md §3a).
 import { z } from "zod";
 
-export const LAYERS = ["segment", "senses", "syn", "labels", "prosody", "forms", "quotes"] as const;
+export const LAYERS = ["segment", "senses", "syn", "labels", "prosody", "forms", "quotes", "collocations"] as const;
 export const Layer = z.enum(LAYERS);
 export type Layer = z.infer<typeof Layer>;
 
@@ -140,8 +140,33 @@ export const QuoteFields = z.object({
 export const QuotesEntry = ProsodyEntry.extend(QuoteFields.shape).strict();
 export type QuotesEntry = z.infer<typeof QuotesEntry>;
 
-/** Any edition line: the segment layer alone, or with the senses, syn, labels, prosody, forms and quotes layers. */
-export const EditionEntry = z.union([QuotesEntry, ProsodyEntry, LabelsEntry, SynEntry, SensesEntry, SegmentEntry]);
+/** The "collocations" layer (data 0.7): phrases defined inside an entry ("Bill of fare"), with offsets in the text that holds them. */
+export const CollocationFields = z.object({
+  collocations: z.array(
+    z
+      .object({
+        /** Which text: senses[sense] (null: the entry's notes), its sub-sense `sub`, or its note `note`. */
+        sense: z.number().int().nullable(),
+        sub: z.number().int().nullable(),
+        note: z.number().int().nullable(),
+        /** Where the run begins (its "--", or the first phrase), where the definition begins, and where it ends. */
+        at: z.number().int(),
+        defStart: z.number().int(),
+        end: z.number().int(),
+        /** The phrases as printed; several when they share one definition. */
+        phrases: z.array(z.object({ start: z.number().int(), end: z.number().int(), text: z.string().min(1) }).strict()).min(1),
+        /** A definition that only points elsewhere ("See under Exception."): the word, and the entry it resolves to. */
+        see: z.string().nullable(),
+        seeId: z.string().nullable(),
+      })
+      .strict(),
+  ),
+});
+export const CollocationsEntry = QuotesEntry.extend(CollocationFields.shape).strict();
+export type CollocationsEntry = z.infer<typeof CollocationsEntry>;
+
+/** Any edition line: the segment layer alone, or with the senses, syn, labels, prosody, forms, quotes and collocations layers. */
+export const EditionEntry = z.union([CollocationsEntry, QuotesEntry, ProsodyEntry, LabelsEntry, SynEntry, SensesEntry, SegmentEntry]);
 export type EditionEntry = z.infer<typeof EditionEntry>;
 
 export const Manifest = z

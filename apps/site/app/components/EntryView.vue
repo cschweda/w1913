@@ -31,7 +31,7 @@ if (canonical && (canonical !== props.slug || isReserved !== props.reservedRoute
 }
 
 const route = useRoute();
-const { data, error } = await useFetch<Page | { formOf: string }>(`/_w/entry/${encodeURIComponent(canonical)}`, { key: `entry-${canonical}` });
+const { data, error } = await useFetch<Page | { formOf: string; anchor?: string }>(`/_w/entry/${encodeURIComponent(canonical)}`, { key: `entry-${canonical}` });
 if (error.value || !data.value) {
   throw createError({
     statusCode: error.value?.statusCode ?? 404,
@@ -40,7 +40,9 @@ if (error.value || !data.value) {
   });
 }
 if ("formOf" in data.value) {
-  await navigateTo({ path: entryPath(data.value.formOf), query: { from: canonical } }, { redirectCode: 302 });
+  // A phrase (data 0.7) goes to its place in the Phrases list; an inflected form gets the "is a form of" note.
+  const to = data.value.anchor ? { path: entryPath(data.value.formOf), hash: `#${data.value.anchor}` } : { path: entryPath(data.value.formOf), query: { from: canonical } };
+  await navigateTo(to, { redirectCode: 302 });
 }
 const page = data.value as Page;
 /** The inflected form that led here ("walked" for walk), shown as a note under the headword. */

@@ -3,7 +3,7 @@
 // Phase 1 shows quotations and labels as printed, inside the sense text;
 // known abbreviations are decoded with <abbr> (shared/abbreviations.ts).
 import { abbreviate } from "./abbreviations.ts";
-import { entryPath } from "./fold.ts";
+import { entryPath, slugify } from "./fold.ts";
 import type { UnusualSpan } from "./unusual.ts";
 import type { Labeler } from "./labels.ts";
 
@@ -39,7 +39,20 @@ export interface RenderableEntry {
   synonyms?: Synonyms | null;
   /** Quotations found in senses and sub-senses (data 0.6); without them quotations stay plain text. */
   quotes?: QuoteMark[];
+  /** Phrases defined inside the entry (data 0.7); without them they stay in the sense text. */
+  collocations?: CollocMark[];
 }
+
+/** A run of phrases with their definition, in senses[sense] (null: entry notes), its sub-sense or its note (data 0.7). */
+export interface CollocMark {
+  sense: number | null; sub: number | null; note: number | null;
+  at: number; defStart: number; end: number;
+  phrases: { start: number; end: number; text: string }[];
+  see: string | null; seeId: string | null;
+}
+
+/** The anchor of a phrase on its page: the entry's anchor, "p", and the phrase as a slug ("n-p-bill-of-fare"). */
+export const phraseAnchor = (anchor: string, phrase: string) => `${anchor}-p-${slugify(phrase)}`;
 
 /** A quotation in a sense (index `sense`) or sub-sense (`sub`), with offsets in that text (data 0.6). */
 export interface QuoteMark {
@@ -187,24 +200,72 @@ function quotedHtml(b: Block, quotes: QuoteMark[], locate: Locate, spans: Unusua
   return html + part(at, b.text.length);
 }
 
-function senseInner(s: Sense, locate: Locate, anchor: string, unusual: UnusualFinder, quotes: QuoteMark[] = []): string {
-  const own = quotes.filter((q) => q.sub === null);
-  let html = s.text ? (own.length ? quotedHtml(s, own, locate, unusual(s.text)) : blockHtml(s, locate, "p", "st", "text", unusual(s.text))) : "";
+/** Quotations inside [from, to) of a text, moved to match a slice that starts at `from`. */
+const shiftQuotes = (qs: QuoteMark[], from: number, to: number) =>
+  qs.filter((q) => q.start >= from && q.authorEnd <= to).map((q) => ({ ...q, start: q.start - from, end: q.end - from, authorStart: q.authorStart - from, authorEnd: q.authorEnd - from }));
+
+/** A text (with its quotations) up to `cut`: what stays in the sense once its phrases move to the Phrases list. */
+function textHtml(b: Block, quotes: QuoteMark[], locate: Locate, unusual: UnusualFinder, cut = b.text.length): string {
+  if (!b.text.trim()) return "";
+  const spans = unusual(b.text);
+  const [sb, ss] = cut < b.text.length ? sliceBlock(b, spans, 0, b.text.slice(0, cut).trimEnd().length) : [b, spans];
+  const qs = shiftQuotes(quotes, 0, sb.text.length);
+  if (!sb.text.trim()) return "";
+  return qs.length ? quotedHtml(sb, qs, locate, ss) : blockHtml(sb, locate, "p", "st", "text", ss);
+}
+
+/** Where a text's phrases begin (the first run moved to the Phrases list), or its length when it has none. */
+const cutOf = (text: string, runs: CollocMark[]) => Math.min(text.length, ...runs.map((c) => c.at));
+
+function senseInner(s: Sense, locate: Locate, anchor: string, unusual: UnusualFinder, quotes: QuoteMark[] = [], cols: CollocMark[] = []): string {
+  const at = (sub: number | null, note: number | null) => cols.filter((c) => c.sub === sub && c.note === note);
+  let html = textHtml(s, quotes.filter((q) => q.sub === null), locate, unusual, cutOf(s.text, at(null, null)));
   if (s.sub.length) {
     html += `<ol class="sub" type="a">${s.sub
-      .map((x, j) => {
-        const qs = quotes.filter((q) => q.sub === j);
-        const inner = qs.length ? quotedHtml(x, qs, locate, unusual(x.text)) : blockHtml(x, locate, "p", "st", "text", unusual(x.text));
-        return `<li id="${anchor}-${s.n ?? "u"}${x.letter}" value="${x.letter.charCodeAt(0) - 96}">${inner}</li>`;
-      })
+      .map((x, j) => `<li id="${anchor}-${s.n ?? "u"}${x.letter}" value="${x.letter.charCodeAt(0) - 96}">${textHtml(x, quotes.filter((q) => q.sub === j), locate, unusual, cutOf(x.text, at(j, null)))}</li>`)
       .join("")}</ol>`;
   }
-  for (const n of s.notes) html += noteHtml(n, locate);
+  s.notes.forEach((n, k) => { html += noteHtml(n, locate, cutOf(n.text, at(null, k))); });
   return html;
 }
 
-function noteHtml(n: Block, locate: Locate): string {
-  return `<div class="note"><span class="cap">Note</span>${blockHtml(n, locate, "p", "")}</div>`;
+function noteHtml(n: Block, locate: Locate, cut = n.text.length): string {
+  const b = cut < n.text.length ? sliceBlock(n, [], 0, n.text.slice(0, cut).trimEnd().length)[0] : n;
+  if (!b.text.trim()) return "";
+  return `<div class="note"><span class="cap">Note</span>${blockHtml(b, locate, "p", "")}</div>`;
+}
+
+/**
+ * The Phrases list of an entry (data 0.7; DESIGN.md §4a, after the senses):
+ * each run's phrases as <dfn> in a <dt> (with any "or" and labels as
+ * printed), its definition in the <dd>, quotations and links kept. Each
+ * phrase has an anchor, so a lookup of "bill of fare" lands on it.
+ */
+export function phrasesHtml(e: RenderableEntry, locate: Locate, anchor: string, unusual: UnusualFinder = NONE): string {
+  const cols = e.collocations ?? [];
+  if (!cols.length) return "";
+  const used = new Set<string>();
+  const items = cols.map((c) => {
+    const src: Block = c.sense === null ? e.notes[c.note!]! : c.note !== null ? e.senses[c.sense]!.notes[c.note]! : c.sub !== null ? e.senses[c.sense]!.sub[c.sub]! : e.senses[c.sense]!;
+    const quotes = c.sense === null || c.note !== null ? [] : (e.quotes ?? []).filter((q) => q.sense === c.sense && q.sub === c.sub);
+    const spans = unusual(src.text);
+    const headFrom = c.phrases[0]!.start;
+    const headTo = src.text.slice(0, c.defStart).replace(/[\s,.;:]+$/, "").length;
+    const [hb] = sliceBlock(src, [], headFrom, headTo);
+    const ids = c.phrases.map((p) => {
+      let id = phraseAnchor(anchor, p.text);
+      for (let k = 2; used.has(id); k++) id = `${phraseAnchor(anchor, p.text)}-${k}`;
+      used.add(id);
+      return id;
+    });
+    const marks = c.phrases.map((p, i) => ({ start: p.start - headFrom, end: p.end - headFrom, html: `<dfn id="${ids[i]}">${escapeHtml(p.text.replace(/\s+/g, " "))}</dfn>` }));
+    const head = blockHtml({ text: hb.text.replace(/\n/g, " "), xrefs: [] }, locate, "span", "", "text", [], marks).replace(/^<span>|<\/span>$/g, "");
+    const [db, ds] = sliceBlock(src, spans, c.defStart, c.end);
+    const qs = shiftQuotes(quotes, c.defStart, c.end);
+    const def = !db.text.trim() ? "" : qs.length ? quotedHtml(db, qs, locate, ds) : blockHtml(db, locate, "p", "st", "text", ds);
+    return `<div class="ci"><dt>${head}</dt><dd>${def}</dd></div>`;
+  });
+  return `<section class="cols" id="${anchor}-phrases" aria-labelledby="${anchor}-phrases-h"><h3 id="${anchor}-phrases-h" class="cap sh">Phrases</h3><dl class="cl">${items.join("")}</dl></section>`;
 }
 
 /**
@@ -214,7 +275,7 @@ function noteHtml(n: Block, locate: Locate): string {
  * paragraph last, shown as a plain line until data 0.3 (DESIGN.md §4a).
  */
 export function bodyHtml(e: RenderableEntry, locate: Locate, anchor: string, unusual: UnusualFinder = NONE, slug = ""): string {
-  const parts: string[] = e.notes.map((n) => noteHtml(n, locate));
+  const parts: string[] = e.notes.map((n, k) => noteHtml(n, locate, cutOf(n.text, (e.collocations ?? []).filter((c) => c.sense === null && c.note === k))));
   let list: string[] = [];
   const flush = () => {
     if (list.length) parts.push(`<ol class="s">${list.join("")}</ol>`);
@@ -222,14 +283,17 @@ export function bodyHtml(e: RenderableEntry, locate: Locate, anchor: string, unu
   };
   e.senses.forEach((s, i) => {
     const qs = (e.quotes ?? []).filter((q) => q.sense === i);
+    const cs = (e.collocations ?? []).filter((c) => c.sense === i);
+    const inner = senseInner(s, locate, anchor, unusual, qs, cs);
     if (s.n !== null) {
-      list.push(`<li id="${anchor}-${s.n}" value="${s.n}">${senseInner(s, locate, anchor, unusual, qs)}</li>`);
-    } else {
+      list.push(`<li id="${anchor}-${s.n}" value="${s.n}">${inner}</li>`);
+    } else if (inner) {
       flush();
-      parts.push(`<div class="d">${senseInner(s, locate, anchor, unusual, qs)}</div>`);
+      parts.push(`<div class="d">${inner}</div>`);
     }
   });
   flush();
+  parts.push(phrasesHtml(e, locate, anchor, unusual));
   if (e.synonyms) parts.push(synonymsHtml(e.synonyms, locate, anchor, slug));
   else if (e.syn) {
     const body = e.syn.replace(/^Syn\.\s*/, "").replace(/^\s*--\s*/, "");

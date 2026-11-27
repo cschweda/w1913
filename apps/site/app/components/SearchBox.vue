@@ -4,7 +4,7 @@
 import config from "../../../../w1913.config";
 import { entryPath } from "../../shared/fold";
 
-interface Item { label: string; slug: string }
+interface Item { label: string; slug: string; anchor?: string }
 
 // "hero" fills the home page; "bar" heads the main column of every other page.
 const props = withDefaults(defineProps<{ size?: "hero" | "bar"; autofocus?: boolean }>(), { size: "bar", autofocus: false });
@@ -26,8 +26,8 @@ async function fetchSuggestions(q: string) {
   if (!q.trim()) { items.value = []; return; }
   loading.value = true;
   try {
-    const rows = await $fetch<{ form: string; slug: string }[]>("/_w/suggest", { query: { q } });
-    if (mine === seq) items.value = rows.map((r) => ({ label: r.form, slug: r.slug }));
+    const rows = await $fetch<{ form: string; slug: string; anchor?: string }[]>("/_w/suggest", { query: { q } });
+    if (mine === seq) items.value = rows.map((r) => ({ label: r.form, slug: r.slug, anchor: r.anchor }));
   } finally {
     if (mine === seq) loading.value = false;
   }
@@ -38,7 +38,7 @@ async function go(item: Item | undefined) {
   selected.value = undefined;
   term.value = "";
   items.value = [];
-  await navigateTo(entryPath(item.slug));
+  await navigateTo(item.anchor ? { path: entryPath(item.slug), hash: `#${item.anchor}` } : entryPath(item.slug));
 }
 
 async function freeText(q: string) {

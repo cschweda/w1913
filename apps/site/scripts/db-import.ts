@@ -15,7 +15,7 @@ import Database from "better-sqlite3";
 import config from "../../../w1913.config.ts";
 import { foldForCompare } from "../shared/fold.ts";
 import { posAnchor, posTitle } from "../shared/pos.ts";
-import { bodyHtml, essayHtml, metaHtml, prose, useLabeler, type Locate, type QuoteMark, type RenderableEntry } from "../shared/render.ts";
+import { bodyHtml, essayHtml, metaHtml, phraseAnchor, prose, useLabeler, type CollocMark, type Locate, type QuoteMark, type RenderableEntry } from "../shared/render.ts";
 import { makeLabeler, type Label } from "../shared/labels.ts";
 import { definitionFrequency, unusualSpans } from "../shared/unusual.ts";
 import { cardSenses, isCardOk } from "../shared/cards.ts";
@@ -31,8 +31,8 @@ if (!existsSync(manifestFile)) {
   process.exit(1);
 }
 const manifest = JSON.parse(readFileSync(manifestFile, "utf8"));
-if (manifest.version !== pin.version || !["senses", "syn", "labels", "prosody", "forms", "quotes"].every((l) => manifest.layers.includes(l)) || !manifest.vocabulary || !manifest.authors) {
-  console.error(`Edition ${manifest.version} with layers ${manifest.layers} does not match the pin ${pin.version} (needs senses, syn, labels, prosody, forms, quotes, a vocabulary and an author table).`);
+if (manifest.version !== pin.version || !["senses", "syn", "labels", "prosody", "forms", "quotes", "collocations"].every((l) => manifest.layers.includes(l)) || !manifest.vocabulary || !manifest.authors) {
+  console.error(`Edition ${manifest.version} with layers ${manifest.layers} does not match the pin ${pin.version} (needs senses, syn, labels, prosody, forms, quotes, collocations, a vocabulary and an author table).`);
   process.exit(1);
 }
 const dbPath = path.resolve(process.env.W1913_DB_PATH ?? path.join(repo, config.paths.devDatabase));
@@ -52,6 +52,7 @@ const authorTable = JSON.parse(readFileSync(path.join(dir, manifest.authors.file
 
 type Entry = RenderableEntry & {
   quotes: QuoteMark[];
+  collocations: CollocMark[];
   forms: string[]; prosody: { syllables: number; stress: string } | null;
   labels: { entry: string[]; senses: string[][] };
   id: string; ord: number; headword: string; variants: string[]; marked: string | null; pos: string | null; text: string;
@@ -112,6 +113,7 @@ db.exec(`
   CREATE VIRTUAL TABLE fts_defs USING fts5(slug UNINDEXED, headword, defs, tokenize = 'porter unicode61 remove_diacritics 2');
   CREATE TABLE pages (slug TEXT PRIMARY KEY, headword TEXT NOT NULL, first_ord INTEGER NOT NULL, rank INTEGER NOT NULL, entries INTEGER NOT NULL);
   CREATE TABLE forms (fold TEXT NOT NULL, form TEXT NOT NULL, slug TEXT NOT NULL, kind TEXT NOT NULL, ord INTEGER NOT NULL);
+  CREATE TABLE phrases (fold TEXT NOT NULL, phrase TEXT NOT NULL, slug TEXT NOT NULL, anchor TEXT NOT NULL, ord INTEGER NOT NULL);
   CREATE TABLE backlinks (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
 `);
 const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@syllables,@stress,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense,@card_ok,@card_json)`);
@@ -120,10 +122,14 @@ let cardOk = 0;
 const onlyNaturalScience = (e: Entry) =>
   e.labels.senses.length > 0 && e.labels.senses.every((ls) => ls.some((c) => NATURAL_SCIENCE.has(c)));
 /** The card for an entry: its first senses and its synonym words (shared/cards.ts). */
-/** A sense's text without its block quotations (data 0.6): the definition up to the first one. */
+/** A sense's text without its block quotations (data 0.6) or phrases (data 0.7): the definition up to the first of them. */
 const defOnly = (e: Entry, i: number, sub: number | null, text: string) => {
-  const first = e.quotes.filter((q) => q.sense === i && q.sub === sub && q.kind === "block").sort((a, b) => a.start - b.start)[0];
-  return first ? text.slice(0, first.start).trim() : text;
+  const cut = Math.min(
+    text.length,
+    ...e.quotes.filter((q) => q.sense === i && q.sub === sub && q.kind === "block").map((q) => q.start),
+    ...e.collocations.filter((c) => c.sense === i && c.sub === sub && c.note === null).map((c) => c.at),
+  );
+  return text.slice(0, cut).trim();
 };
 /** The card's quotation: the first of at most 220 characters (DESIGN.md §4, quotation on the back). */
 const cardQuote = (e: Entry) => {
@@ -169,6 +175,8 @@ const summaryOf = (e: Entry) =>
   e.senses.filter((s) => s.text.trim()).slice(0, 2).map((s, i) => `${s.n ?? i + 1}. ${prose(s.text).replace(/&[a-z#0-9]+;/g, (m) => ({ "&amp;": "&", "&quot;": '"', "&#39;": "'", "&lt;": "<", "&gt;": ">" })[m] ?? m)}`).join("  ").slice(0, 420);
 const insPage = db.prepare(`INSERT INTO pages VALUES (?,?,?,?,?)`);
 const insForm = db.prepare(`INSERT INTO forms VALUES (?,?,?,?,?)`);
+const insPhrase = db.prepare(`INSERT INTO phrases VALUES (?,?,?,?,?)`);
+let phraseCount = 0;
 /** The form rows as inserted, for the lookup build (same order as the table). */
 const formRows: { fold: string; form: string; slug: string; kind: string; ord: number }[] = [];
 const insBack = db.prepare(`INSERT INTO backlinks VALUES (?,?,?,?)`);
@@ -204,6 +212,18 @@ db.transaction(() => {
       meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor, unusualFor(e), slug), text: e.text, summary: summaryOf(e), first_sense: firstSenseOf(e),
       card_ok: isCardOk(senseTexts(e)) && !onlyNaturalScience(e) ? (cardOk++, 1) : 0, card_json: JSON.stringify(cardOf(e)),
     });
+    // Phrases (data 0.7): each with the anchor bodyHtml gave it (phrasesHtml numbers repeats the same way).
+    const usedAnchors = new Set<string>();
+    for (const c of e.collocations) {
+      for (const p of c.phrases) {
+        let a = phraseAnchor(anchor, p.text);
+        for (let k = 2; usedAnchors.has(a); k++) a = `${phraseAnchor(anchor, p.text)}-${k}`;
+        usedAnchors.add(a);
+        const text = p.text.replace(/\s+/g, " ");
+        insPhrase.run(foldForCompare(text), text, slug, a, e.ord);
+        phraseCount++;
+      }
+    }
     const seen = new Set<string>();
     for (const [form, kind] of [[e.headword, "headword"], ...e.variants.map((v) => [v, "variant"]), ...e.forms.map((v) => [v, "inflection"])] as [string, string][]) {
       const f = foldForCompare(form);
@@ -308,6 +328,7 @@ db.exec(`
   CREATE INDEX entries_slug ON entries (slug, ord);
   CREATE INDEX pages_rank ON pages (rank);
   CREATE INDEX forms_fold ON forms (fold, ord);
+  CREATE INDEX phrases_fold ON phrases (fold, ord);
   CREATE INDEX backlinks_slug ON backlinks (slug, from_ord);
   CREATE INDEX syn_listed_slug ON syn_listed (slug, from_ord);
   CREATE INDEX essay_pages_slug ON essay_pages (slug);
@@ -386,5 +407,5 @@ renameSync(tmp, dbPath);
 }
 // A slug that folds two different spellings together would make a page show
 // entries that do not match its headword; report it rather than hide it.
-console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, ${[...backlinks.values()].reduce((a, m) => a + m.size, 0)} backlinks, ${unusualMarked} unusual words, ${cardOk} card_ok entries, in ${Math.round(performance.now() - t0)} ms`);
+console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, ${[...backlinks.values()].reduce((a, m) => a + m.size, 0)} backlinks, ${unusualMarked} unusual words, ${cardOk} card_ok entries, ${phraseCount} phrases, in ${Math.round(performance.now() - t0)} ms`);
 console.log(`  ${dbPath}`);

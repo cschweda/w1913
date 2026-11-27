@@ -3,19 +3,40 @@ import config from "../../../../w1913.config.ts";
 import { foldForCompare } from "../../shared/fold.ts";
 import { lookupWith } from "../../shared/inflect.ts";
 
-export interface Suggestion { form: string; slug: string }
+export interface Suggestion { form: string; slug: string; anchor?: string }
 
-/** Rule: headwords and variants whose folded spelling starts with the query; exact match first, then shorter, then edition order. */
+/**
+ * Rule: headwords and variants whose folded spelling starts with the query;
+ * exact match first, then shorter, then edition order. When the query has a
+ * space ("bill of"), phrases defined inside entries (data 0.7) that start
+ * with it fill the remaining places, each leading to its anchor.
+ */
 export function suggest(q: string, limit: number = config.features.suggestions): Suggestion[] {
   const f = foldForCompare(q);
   if (!f) return [];
-  return useDb()
+  const words = useDb()
     .prepare(
       `SELECT form, slug FROM (
          SELECT form, slug, fold, MIN(ord) AS ord FROM forms WHERE fold >= ? AND fold < ? GROUP BY slug
        ) ORDER BY (fold = ?) DESC, length(fold), ord LIMIT ?`,
     )
     .all(f, f + "{", f, limit) as Suggestion[];
+  if (!/\S\s/.test(q) || words.length >= limit) return words;
+  const phrases = useDb()
+    .prepare(
+      `SELECT phrase AS form, slug, anchor FROM (
+         SELECT phrase, slug, anchor, fold, MIN(ord) AS ord FROM phrases WHERE fold >= ? AND fold < ? GROUP BY fold
+       ) ORDER BY (fold = ?) DESC, length(fold), ord LIMIT ?`,
+    )
+    .all(f, f + "{", f, limit - words.length) as Suggestion[];
+  return [...words, ...phrases];
+}
+
+/** Rule: a phrase defined inside an entry ("bill of fare"), by its folded spelling; the first in edition order. */
+export function phraseOf(text: string): { slug: string; anchor: string; phrase: string } | null {
+  const f = foldForCompare(text);
+  if (!f) return null;
+  return (useDb().prepare("SELECT slug, anchor, phrase FROM phrases WHERE fold = ? ORDER BY ord LIMIT 1").get(f) as { slug: string; anchor: string; phrase: string } | undefined) ?? null;
 }
 
 /** Rule: an exact headword or variant match after folding, then a listed inflection ("went" → go), else null. */

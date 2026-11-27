@@ -126,3 +126,13 @@ mark { background: color-mix(in srgb, var(--ac) 28%, transparent); color: var(--
 .qa::before { content: "\2014\00a0"; }
 cite { font-style: normal; }
 cite a { color: var(--fg); }
+
+/* Phrases (data 0.7; shared/render.ts phrasesHtml): after the senses, before Synonyms. */
+.cols { margin: 32px 0 0; padding: 20px 0 0; border-top: 1px solid var(--ln); }
+.cl { margin: 0; }
+.ci + .ci { margin-top: 14px; }
+.ci dt { font-size: 18px; line-height: 1.5; }
+.ci dfn { font-style: normal; font-weight: 700; }
+.ci dd { margin: 2px 0 0; padding-left: 20px; font-size: 17px; line-height: 1.55; }
+.ci dd .st + .st { margin-top: 8px; }
+.ci dfn:target { background: color-mix(in srgb, var(--ac) 12%, transparent); scroll-margin-top: 24px; }
