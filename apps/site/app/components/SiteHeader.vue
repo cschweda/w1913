@@ -9,6 +9,8 @@
       <span class="word">w1913<span class="vh">, home</span></span>
     </NuxtLink>
     <nav aria-label="Sections" class="sections">
+      <NuxtLink to="/search" class="t" active-class="on">Search</NuxtLink>
+      <NuxtLink to="/label" class="t" active-class="on">Labels</NuxtLink>
       <NuxtLink to="/cards" class="t" active-class="on">Cards</NuxtLink>
       <NuxtLink to="/synonyms" class="t" active-class="on">Synonyms</NuxtLink>
       <NuxtLink to="/about" class="t" active-class="on">About</NuxtLink>
@@ -26,4 +28,13 @@
 .mark:hover .word { color: var(--ac); }
 .sections { display: flex; flex-wrap: wrap; gap: 0 32px; font-size: 17px; }
 .sections .on { font-weight: 700; box-shadow: inset 0 -2px 0 var(--ac); }
+/* Narrow screens: logo and theme toggle share the first row; the sections get a row of their own. */
+@media (max-width: 760px) {
+  .sections { order: 3; width: 100%; gap: 4px 22px; }
+}
+@media (max-width: 400px) {
+  .badge { width: 40px; height: 40px; }
+  .word { font-size: 28px; }
+  .sections { gap: 4px 18px; font-size: 16px; }
+}
 </style>

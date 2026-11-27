@@ -91,7 +91,7 @@ export const config = {
      * A wrong value fails the deploy at the import step; the live site is
      * unaffected.
      */
-    version: "0.3",
+    version: "0.4",
   },
 
   // ---------------------------------------------------------------------------
@@ -184,6 +184,8 @@ export const config = {
     previewDelayMs: 250,
     /** Cards in a deck (DESIGN.md says 20). The trail deck holds at most this many too. */
     deckSize: 20,
+    /** Results per page of definition search and label pages. */
+    resultsPerPage: 30,
   },
 
   // ---------------------------------------------------------------------------

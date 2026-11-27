@@ -17,6 +17,36 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-27
+
+Phase 3, "What's the word for…?". Data 0.4 (parser 0.3.0) adds the `labels` layer.
+
+### Added
+
+- **Data 0.4, `labels` layer:** a closed vocabulary of 99 labels (17 usage, 82 subject), built
+  by counting every bracketed and parenthesised group used 20 or more times, with spelling
+  variants merged (`Zoöl.`, `Zoöl`, `Zool.`). A group counts as labels only when it is made
+  entirely of known forms (`[Obs. or Prov. Eng.]`, `(Bot. & Zoöl.)`). Each entry has its header
+  labels and, per sense, the labels that apply; the edition ships `labels.json`. 60,554 of 157,690
+  senses carry a label.
+- **Definition search** at `/search`: SQLite FTS5 with Porter stemming, ranked by bm25 with the
+  headword weighted. Every word is quoted, so no query syntax reaches SQLite; function words
+  are dropped outside "quoted phrases"; if no entry has every word, any word may match, and the
+  page says so. Matches as highlights, pages of 30, and a link to make a card deck of the results.
+- **Labels:** `/label` lists every label with its word count; `/label/<code>` lists its words in
+  dictionary order with each first sense. In entries, printed label groups are chips linking there.
+- **Card decks by label and by search** (`/cards?deck=label:poetic`, `/cards?deck=q:walk idly`),
+  with Poetic, Nautical and Obsolete as buttons.
+- Search and Labels in the navbar; both in `/llms.txt`.
+- The Phase 3 exit test: 20 fixed queries, each must find its word in the top results.
+
+### Changed
+
+- The random card deck leaves out entries whose every sense is a natural-science term
+  (zoology, botany, chemistry, and nine more), as DESIGN.md asked: 68,572 entries are card-worthy.
+- On narrow screens the navbar puts the theme toggle beside the logo and the sections below.
+- The database is about 207 MB (was 162 MB), mostly the search index.
+
 ## [0.7.2] - 2026-11-27
 
 ### Changed
@@ -257,7 +287,9 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/cschweda/w1913/compare/v0.7.2...v0.8.0
+[0.7.2]: https://github.com/cschweda/w1913/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/cschweda/w1913/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/cschweda/w1913/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/cschweda/w1913/compare/v0.6.1...v0.6.2

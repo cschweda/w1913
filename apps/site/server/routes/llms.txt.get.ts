@@ -18,7 +18,9 @@ Each entry lives at ${s.url}/<word> (for example ${s.url}/sublime). Route words 
 - [Example entry: sublime](${s.url}/sublime): senses, etymology, syllables and stress, synonyms, and words that point to it
 - [Synonyms](${s.url}/synonyms): the dictionary's 624 essays on how near-synonyms differ, A to Z
 - [Compare words](${s.url}/synonyms/compare?w=abandon,desert,forsake): two or three words side by side
-- [Cards](${s.url}/cards): a word at a time, at random or from the words you visited
+- [Search definitions](${s.url}/search?q=walk+idly): find the word for a meaning, in the words the 1913 definitions use
+- [Labels](${s.url}/label): words by usage (obsolete, poetic, colloquial) and by trade or science (nautical, law, heraldry)
+- [Cards](${s.url}/cards): a word at a time, at random, by label, by search, or from the words you visited
 - [About](${s.url}/about): sources, licence, and privacy
 
 ## Data and source

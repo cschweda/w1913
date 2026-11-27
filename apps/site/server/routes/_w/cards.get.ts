@@ -3,6 +3,7 @@
 // (the trail deck, which lives in the browser), in that order.
 import config from "../../../../../w1913.config.ts";
 import type { Card } from "../../../shared/cards";
+import { searchDefinitions } from "../../../shared/search";
 
 interface Row { slug: string; anchor: string; headword: string; headword_marked: string | null; pos: string | null; pos_title: string | null; card_json: string }
 
@@ -21,8 +22,28 @@ export default defineEventHandler((event) => {
     const one = db.prepare(`SELECT ${COLS} FROM entries WHERE slug = ? ORDER BY card_ok DESC, ord LIMIT 1`);
     return slugs.map((s) => one.get(s) as Row | undefined).filter((r): r is Row => !!r).map(toCard);
   }
+  const n = config.features.deckSize;
+  const deck = String(q.deck ?? "random");
+  // By label (data 0.4): random pages carrying the label, their first card-worthy entry.
+  if (deck.startsWith("label:")) {
+    const code = deck.slice(6);
+    const rows = db
+      .prepare(
+        `SELECT ${COLS} FROM entries e WHERE e.ord IN (
+           SELECT (SELECT ord FROM entries x WHERE x.slug = pl.slug ORDER BY x.card_ok DESC, x.ord LIMIT 1)
+           FROM page_labels pl WHERE pl.code = ? ORDER BY random() LIMIT ?)`,
+      )
+      .all(code, n) as Row[];
+    return rows.sort(() => Math.random() - 0.5).map(toCard);
+  }
+  // By search: the top results of a definition search, in rank order.
+  if (deck.startsWith("q:")) {
+    const hits = searchDefinitions(db, deck.slice(2).slice(0, 120), n, 0).hits;
+    const one = db.prepare(`SELECT ${COLS} FROM entries WHERE slug = ? ORDER BY card_ok DESC, ord LIMIT 1`);
+    return hits.map((h) => one.get(h.slug) as Row | undefined).filter((r): r is Row => !!r).map(toCard);
+  }
   const rows = db
     .prepare(`SELECT ${COLS} FROM entries WHERE rowid IN (SELECT rowid FROM entries WHERE card_ok = 1 ORDER BY random() LIMIT ?)`)
-    .all(config.features.deckSize) as Row[];
+    .all(n) as Row[];
   return rows.sort(() => Math.random() - 0.5).map(toCard);
 });

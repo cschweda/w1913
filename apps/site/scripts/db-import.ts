@@ -12,7 +12,8 @@ import Database from "better-sqlite3";
 import config from "../../../w1913.config.ts";
 import { foldForCompare } from "../shared/fold.ts";
 import { posAnchor, posTitle } from "../shared/pos.ts";
-import { bodyHtml, essayHtml, metaHtml, prose, type Locate, type RenderableEntry } from "../shared/render.ts";
+import { bodyHtml, essayHtml, metaHtml, prose, useLabeler, type Locate, type RenderableEntry } from "../shared/render.ts";
+import { makeLabeler, type Label } from "../shared/labels.ts";
 import { definitionFrequency, unusualSpans } from "../shared/unusual.ts";
 import { cardSenses, isCardOk } from "../shared/cards.ts";
 import { entryPath } from "../shared/fold.ts";
@@ -27,8 +28,8 @@ if (!existsSync(manifestFile)) {
   process.exit(1);
 }
 const manifest = JSON.parse(readFileSync(manifestFile, "utf8"));
-if (manifest.version !== pin.version || !manifest.layers.includes("senses") || !manifest.layers.includes("syn")) {
-  console.error(`Edition ${manifest.version} with layers ${manifest.layers} does not match the pin ${pin.version} (needs senses and syn).`);
+if (manifest.version !== pin.version || !["senses", "syn", "labels"].every((l) => manifest.layers.includes(l)) || !manifest.vocabulary) {
+  console.error(`Edition ${manifest.version} with layers ${manifest.layers} does not match the pin ${pin.version} (needs senses, syn, labels and a vocabulary).`);
   process.exit(1);
 }
 const dbPath = path.resolve(process.env.W1913_DB_PATH ?? path.join(repo, config.paths.devDatabase));
@@ -36,7 +37,16 @@ mkdirSync(path.dirname(dbPath), { recursive: true });
 const tmp = `${dbPath}.building`;
 rmSync(tmp, { force: true });
 
+// The label vocabulary shipped with the edition (data 0.4), and the rule
+// that shows label groups as chips while rendering.
+const vocabulary = JSON.parse(readFileSync(path.join(dir, manifest.vocabulary.file), "utf8")) as Label[];
+useLabeler(makeLabeler(vocabulary));
+// Natural-science subjects (data package NATURAL_SCIENCE): an entry whose
+// every sense carries one of these is left out of the random deck.
+const NATURAL_SCIENCE = new Set(["zoology", "botany", "chemistry", "mineralogy", "anatomy", "physiology", "biology", "geology", "paleontology", "crystallography", "natural-history", "meteorology"]);
+
 type Entry = RenderableEntry & {
+  labels: { entry: string[]; senses: string[][] };
   id: string; ord: number; headword: string; variants: string[]; marked: string | null; pos: string | null; text: string;
 };
 
@@ -87,12 +97,18 @@ db.exec(`
   CREATE TABLE essays (id INTEGER PRIMARY KEY, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_anchor TEXT NOT NULL,
     from_ord INTEGER NOT NULL, title TEXT NOT NULL, sort_key TEXT NOT NULL, html TEXT NOT NULL);
   CREATE TABLE essay_pages (essay_id INTEGER NOT NULL, slug TEXT NOT NULL);
+  CREATE TABLE labels (code TEXT PRIMARY KEY, name TEXT NOT NULL, kind TEXT NOT NULL, forms TEXT NOT NULL, pages INTEGER NOT NULL, senses INTEGER NOT NULL);
+  CREATE TABLE page_labels (code TEXT NOT NULL, slug TEXT NOT NULL, ord INTEGER NOT NULL);
+  CREATE VIRTUAL TABLE fts_defs USING fts5(slug UNINDEXED, headword, defs, tokenize = 'porter unicode61 remove_diacritics 2');
   CREATE TABLE pages (slug TEXT PRIMARY KEY, headword TEXT NOT NULL, first_ord INTEGER NOT NULL, rank INTEGER NOT NULL, entries INTEGER NOT NULL);
   CREATE TABLE forms (fold TEXT NOT NULL, form TEXT NOT NULL, slug TEXT NOT NULL, kind TEXT NOT NULL, ord INTEGER NOT NULL);
   CREATE TABLE backlinks (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
 `);
 const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense,@card_ok,@card_json)`);
 let cardOk = 0;
+/** Rule (DESIGN.md §4): every sense carries a natural-science subject label. */
+const onlyNaturalScience = (e: Entry) =>
+  e.labels.senses.length > 0 && e.labels.senses.every((ls) => ls.some((c) => NATURAL_SCIENCE.has(c)));
 /** The card for an entry: its first senses and its synonym words (shared/cards.ts). */
 const cardOf = (e: Entry) => ({
   senses: cardSenses(e.senses.flatMap((s) => (s.text.trim() ? [s.text] : s.sub.map((x) => x.text)))),
@@ -159,7 +175,7 @@ db.transaction(() => {
       letter: (foldForCompare(e.headword)[0] ?? "#").toUpperCase(),
       sense_count: e.senses.filter((s) => s.n !== null).length,
       meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor, unusualFor(e)), text: e.text, summary: summaryOf(e), first_sense: firstSenseOf(e),
-      card_ok: isCardOk(senseTexts(e)) ? (cardOk++, 1) : 0, card_json: JSON.stringify(cardOf(e)),
+      card_ok: isCardOk(senseTexts(e)) && !onlyNaturalScience(e) ? (cardOk++, 1) : 0, card_json: JSON.stringify(cardOf(e)),
     });
     const seen = new Set<string>();
     for (const [form, kind] of [[e.headword, "headword"], ...e.variants.map((v) => [v, "variant"])] as [string, string][]) {
@@ -174,6 +190,31 @@ db.transaction(() => {
     .sort((a, b) => a.first - b.first)
     .forEach((p, rank) => insPage.run(p.slug, p.headword, p.first, rank, p.n));
   for (const [to, froms] of backlinks) for (const [from, v] of froms) insBack.run(to, from, v.headword, v.ord);
+
+  // Labels (data 0.4): per page, the labels on any of its senses; per label,
+  // how many pages and senses carry it.
+  const insPageLabel = db.prepare("INSERT INTO page_labels VALUES (?,?,?)");
+  const labelPages = new Map<string, Set<string>>();
+  const labelSenses = new Map<string, number>();
+  for (const e of entries) {
+    const slug = slugOf(e);
+    for (const ls of e.labels.senses) for (const c of ls) labelSenses.set(c, (labelSenses.get(c) ?? 0) + 1);
+    for (const c of new Set(e.labels.senses.flat().concat(e.labels.entry))) {
+      let set = labelPages.get(c);
+      if (!set) labelPages.set(c, (set = new Set()));
+      if (!set.has(slug)) { set.add(slug); insPageLabel.run(c, slug, pages.get(slug)![0]!.ord); }
+    }
+  }
+  const insLabel = db.prepare("INSERT INTO labels VALUES (?,?,?,?,?,?)");
+  for (const l of vocabulary) insLabel.run(l.code, l.name, l.kind, l.forms.join(" | "), labelPages.get(l.code)?.size ?? 0, labelSenses.get(l.code) ?? 0);
+
+  // Definition search (FTS5): one row per page, its headword and every sense
+  // and sub-sense of its entries, lines joined.
+  const insFts = db.prepare("INSERT INTO fts_defs (slug, headword, defs) VALUES (?,?,?)");
+  for (const [slug, list] of pages) {
+    const defs = list.flatMap((e) => senseTexts(e)).join(" \u2022 ").replace(/\s*\n\s*/g, " ");
+    insFts.run(slug, list[0]!.headword, defs);
+  }
 
   // Synonyms (data 0.3). "Listed as a synonym under": for each listed word
   // that resolves to a page, the page whose Syn. list names it. Essays: each
@@ -219,6 +260,9 @@ db.exec(`
   CREATE INDEX essay_pages_slug ON essay_pages (slug);
   CREATE INDEX essays_sort ON essays (sort_key);
   CREATE INDEX entries_card ON entries (card_ok);
+  CREATE INDEX page_labels_code ON page_labels (code, ord);
+  CREATE INDEX page_labels_slug ON page_labels (slug);
+  INSERT INTO fts_defs(fts_defs) VALUES ('optimize');
   ANALYZE;
 `);
 db.close();

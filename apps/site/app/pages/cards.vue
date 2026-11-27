@@ -12,18 +12,30 @@ import type { Card } from "../../shared/cards";
 import { entryPath } from "../../shared/fold";
 import { ldScript, webPageLd } from "../../shared/structured";
 
-type DeckName = "random" | "trail";
+/** "random", "trail", "label:<code>" or "q:<query>" (DESIGN.md §4 deck kinds). */
+type DeckName = string;
 const route = useRoute();
-const deckName = ref<DeckName>(route.query.deck === "trail" ? "trail" : "random");
+const deckName = ref<DeckName>(typeof route.query.deck === "string" && route.query.deck ? route.query.deck : "random");
 const showFirst = ref<"word" | "definition">(route.query.show === "definition" ? "definition" : "word");
 const cards = ref<Card[]>([]);
 const index = ref(0);
 const flipped = ref(false);
 const loading = ref(true);
 const { trail } = useTrail();
+const { data: labelList } = await useFetch<{ code: string; name: string }[]>("/_w/labels", { key: "labels-for-cards" });
+const labelName = (code: string) => labelList.value?.find((l) => l.code === code)?.name ?? code;
+/** Three label decks offered as buttons, as in the mockup; any other label is reached from its label page. */
+const QUICK = ["poetic", "nautical", "obs"];
 
 const card = computed(() => cards.value[index.value] ?? null);
-const deckLabel = computed(() => (deckName.value === "random" ? "Random deck" : "Trail deck"));
+const deckLabel = computed(() => {
+  const d = deckName.value;
+  if (d === "random") return "Random deck";
+  if (d === "trail") return "Trail deck";
+  if (d.startsWith("label:")) return `${labelName(d.slice(6))} deck`;
+  if (d.startsWith("q:")) return `Search deck: “${d.slice(2)}”`;
+  return "Deck";
+});
 
 async function deal() {
   loading.value = true;
@@ -34,7 +46,7 @@ async function deal() {
       const slugs = trail.value.map((t) => t.slug).slice(-config.features.deckSize);
       cards.value = slugs.length ? await $fetch<Card[]>("/_w/cards", { query: { slugs: slugs.join(",") } }) : [];
     } else {
-      cards.value = await $fetch<Card[]>("/_w/cards", { query: { deck: "random" } });
+      cards.value = await $fetch<Card[]>("/_w/cards", { query: { deck: deckName.value } });
     }
   } finally {
     loading.value = false;
@@ -82,7 +94,9 @@ useHead({ script: [ldScript(webPageLd({ url: `${config.site.url}/cards`, name: "
       <div role="group" aria-label="Deck" class="grp">
         <span class="cap lab" aria-hidden="true">Deck</span>
         <button type="button" :class="['btn', { on: deckName === 'random' }]" :aria-pressed="deckName === 'random'" @click="choose('random')">Random</button>
+        <button v-for="c in QUICK" :key="c" type="button" :class="['btn', { on: deckName === `label:${c}` }]" :aria-pressed="deckName === `label:${c}`" @click="choose(`label:${c}`)">{{ labelName(c) }}</button>
         <button type="button" :class="['btn', { on: deckName === 'trail' }]" :aria-pressed="deckName === 'trail'" @click="choose('trail')">Trail</button>
+        <NuxtLink to="/label" class="t x all">All labels</NuxtLink>
         <button type="button" class="btn btn-quiet" @click="deal">New deck</button>
       </div>
       <div role="group" aria-label="Show first" class="grp">
@@ -101,7 +115,8 @@ useHead({ script: [ldScript(webPageLd({ url: `${config.site.url}/cards`, name: "
       <div id="card-face" class="face" aria-live="polite">
         <p v-if="loading" class="m empty">Dealing…</p>
         <div v-else-if="!card" class="empty">
-          <p class="m">Your trail is empty. Look up a few words, then come back for a deck of them.</p>
+          <p v-if="deckName === 'trail'" class="m">Your trail is empty. Look up a few words, then come back for a deck of them.</p>
+          <p v-else class="m">No cards in this deck.</p>
           <NuxtLink to="/" class="t x">Look up a word</NuxtLink>
         </div>
 
@@ -154,6 +169,7 @@ useHead({ script: [ldScript(webPageLd({ url: `${config.site.url}/cards`, name: "
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 40px; margin-top: 12px; }
 .grp { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .lab { margin-right: 8px; }
+.all { margin-left: 8px; font-size: 14px; }
 .btn.on { background: var(--fg); color: var(--bg); }
 .card { display: flex; flex-direction: column; min-height: min(560px, 70vh); margin-top: 24px; border: 1px solid var(--fg); }
 .cardcap { display: flex; justify-content: space-between; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--ln); }

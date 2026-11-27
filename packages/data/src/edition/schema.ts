@@ -90,8 +90,22 @@ export const SynFields = z.object({
 export const SynEntry = SensesEntry.extend(SynFields.shape).strict();
 export type SynEntry = z.infer<typeof SynEntry>;
 
-/** Any edition line: the segment layer alone, or with the senses (and syn) layers. */
-export const EditionEntry = z.union([SynEntry, SensesEntry, SegmentEntry]);
+/** Fields the "labels" layer (data 0.4) adds: label codes from the vocabulary in labels.json. */
+export const LabelsFields = z.object({
+  labels: z
+    .object({
+      /** Labels in the header line, which apply to every sense. */
+      entry: z.array(z.string()),
+      /** For each sense (parallel to `senses`), its labels: the header's plus those in its own text and sub-senses. */
+      senses: z.array(z.array(z.string())),
+    })
+    .strict(),
+});
+export const LabelsEntry = SynEntry.extend(LabelsFields.shape).strict();
+export type LabelsEntry = z.infer<typeof LabelsEntry>;
+
+/** Any edition line: the segment layer alone, or with the senses, syn and labels layers. */
+export const EditionEntry = z.union([LabelsEntry, SynEntry, SensesEntry, SegmentEntry]);
 export type EditionEntry = z.infer<typeof EditionEntry>;
 
 export const Manifest = z
@@ -105,6 +119,8 @@ export const Manifest = z
     source: z.object({ file: z.literal("29765.txt"), sha256: z.string().regex(/^[0-9a-f]{64}$/) }),
     parserVersion: z.string(),
     jsonl: z.object({ file: z.string(), sha256: z.string().regex(/^[0-9a-f]{64}$/), bytes: z.number().int() }),
+    /** The label vocabulary, from data 0.4: code, name, kind, printed forms. */
+    vocabulary: z.object({ file: z.string(), sha256: z.string().regex(/^[0-9a-f]{64}$/) }).optional(),
     licence: z.literal("CC0-1.0"),
     built: z.string(),
   })

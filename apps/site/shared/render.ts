@@ -5,6 +5,21 @@
 import { abbreviate } from "./abbreviations.ts";
 import { entryPath } from "./fold.ts";
 import type { UnusualSpan } from "./unusual.ts";
+import type { Labeler } from "./labels.ts";
+
+/** The label rule in use while rendering (set by the import; none by default). */
+let labeler: Labeler | null = null;
+export function useLabeler(l: Labeler | null) { labeler = l; }
+
+/** A label group as chips: one small link per label, named in full (data 0.4). */
+function chipsHtml(codes: string[]): string {
+  return codes
+    .map((c) => {
+      const l = labeler?.label(c);
+      return l ? `<a href="/label/${c}" class="chip">${escapeHtml(l.name)}</a>` : "";
+    })
+    .join("");
+}
 
 
 export interface Xref { start: number; end: number; to: string; id: string | null; sense: number | null }
@@ -45,9 +60,23 @@ export function prose(s: string): string {
 
 type Context = "etymology" | "inflections" | "text";
 
-/** prose() plus decoded abbreviations for the given context. */
+/**
+ * prose() plus decoded abbreviations for the given context. In running text,
+ * a bracketed or parenthesised group made only of known labels ("[Poetic]",
+ * "(Naut.)") is shown as label chips in its place (DESIGN.md §4a, data 0.4);
+ * other groups stay as printed.
+ */
 export function richProse(s: string, context: Context): string {
-  return abbreviate(prose(s), context);
+  if (context !== "text" || !labeler) return abbreviate(prose(s), context);
+  let out = "";
+  let at = 0;
+  for (const m of s.matchAll(/\([^()]{1,60}\)|\[[^[\]]{1,60}\]/g)) {
+    const codes = labeler.group(m[0]);
+    if (!codes) continue;
+    out += abbreviate(prose(s.slice(at, m.index)), context) + chipsHtml(codes);
+    at = m.index + m[0].length;
+  }
+  return out + abbreviate(prose(s.slice(at)), context);
 }
 
 /** A block's text as HTML paragraphs, with its cross-references linked and abbreviations decoded. */

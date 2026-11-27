@@ -5,7 +5,8 @@ import type { RawEntry } from "../segment/segment.ts";
 import { parseSenses, type Block, type SensesLayer } from "../senses/parse.ts";
 import type { XrefMatch } from "../senses/xrefs.ts";
 import { parseSyn } from "../syn/parse.ts";
-import type { SegmentEntry, SensesEntry, SynEntry } from "./schema.ts";
+import { labelsInGroup, labelsInText } from "../labels/vocabulary.ts";
+import type { LabelsEntry, SegmentEntry, SensesEntry, SynEntry } from "./schema.ts";
 
 type ResolvedXref = XrefMatch & { id: string | null };
 
@@ -74,4 +75,15 @@ export function toSynEntry(e: SensesEntry, resolve: (x: XrefMatch) => string | n
     },
     layers: ["segment", "senses", "syn"],
   };
+}
+
+/**
+ * The labels layer. Rule: the entry's labels come from its header label
+ * groups; each sense has those plus the label groups in its own text and its
+ * sub-senses' text (labelsInGroup decides what counts as a label group).
+ */
+export function toLabelsEntry(e: SynEntry): LabelsEntry {
+  const entry = [...new Set([...e.headerLabels, ...e.headerMarks].flatMap((g) => labelsInGroup(g) ?? []))];
+  const senses = e.senses.map((s) => [...new Set([...entry, ...labelsInText([s.text, ...s.sub.map((x) => x.text)].join(" "))])]);
+  return { ...e, labels: { entry, senses }, layers: ["segment", "senses", "syn", "labels"] };
 }

@@ -319,7 +319,7 @@ Everything is built from the plain text. Features marked **P** rest on structure
 
 ### "What's the word for…?"
 
-- **Definition search** (P): FTS5 with stemming. Labelled honestly: it matches the words in 1913 definitions.
+- **Definition search** (P) at `/search` (shipped in v0.8.0, data 0.4): FTS5 over each page's headword and definitions, Porter stemming, bm25 ranking with the headword weighted 8 to 1. Every query word is quoted (no FTS syntax reaches SQLite); function words are dropped outside "quoted phrases"; all words must match, and when none match every word, any word may, and the page says so. Labelled honestly: it matches the words in 1913 definitions, so the page advises the dictionary's own phrasing ("dread of water", not "fear of water").
 - **Later, not v1:** meaning-based search using embeddings.
 
 ### "I need a word with this rhythm."
@@ -336,7 +336,7 @@ Everything is built from the plain text. Features marked **P** rest on structure
 
 ### "Show me something."
 
-- **Label browsing** (P): `/label/obs`, `/label/poetic`, `/label/naut`.
+- **Label browsing** (P, shipped in v0.8.0): `/label` lists all 99 labels (usage, then trades and sciences) with counts; `/label/obs`, `/label/poetic`, `/label/nautical` list their words in dictionary order. Codes are words, not the printed abbreviations. In entries, a printed label group (`[Poetic]`, `(Naut.)`, `[Obs. or R.]`) shows as chips linking to its label page; a group with anything else in it stays as printed.
 - **Random entry; word of the day** (P).
 
 ### "Teach me a word."
@@ -346,8 +346,9 @@ More play than tool, but reading a dictionary is how many writers find words, an
 - **Cards** (P) at `/cards`: one word at a time from a deck. Random and trail decks, synonyms on the back, and reverse mode shipped in v0.7.0 (79,594 entries are `card_ok`); a visible note says cards are drawn from a 1913 dictionary and shown as printed. The front shows the word; flipping shows the part of speech, the first two or three senses, the entry's synonym words, and a link to the full entry. A quotation is added to the back when the `quotes` layer ships.
 - **Decks:**
   - *Random*: drawn from entries marked `card_ok`.
-  - *By label*: any usage or subject label (`/cards?deck=label:naut`).
-  - *By search*: the results of a definition search (`/cards?deck=q:slowly`).
+  - *By label*: any usage or subject label (`/cards?deck=label:nautical`). Shipped in v0.8.0, with Poetic, Nautical and Obsolete as buttons.
+  - *By search*: the results of a definition search (`/cards?deck=q:slowly`). Shipped in v0.8.0.
+  - The random deck leaves out entries whose every sense carries a natural-science label (zoology, botany, chemistry, mineralogy, anatomy and seven more): 68,572 entries are `card_ok` in data 0.4, against 79,594 before.
   - *Trail* and *Saved*: the visitor's own lists, built in the browser.
   - *By author* (H): words quoted from one author, once quotation data ships.
 - **`card_ok`.** A uniform draw from every headword is mostly variant spellings, bare cross-references, and species names. An entry is `card_ok` when it has at least one definition that is not only a cross-reference and is at least 40 characters long. Once labels exist (data 0.4), entries whose only senses carry natural-science subject labels are excluded from the random deck; they remain available as label decks. The thresholds are starting values; the count of `card_ok` entries goes in `report.json`.
