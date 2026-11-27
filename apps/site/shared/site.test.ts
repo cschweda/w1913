@@ -139,3 +139,12 @@ describe("prosodyOf", () => {
     expect(prosodyOf(null)).toBeNull();
   });
 });
+
+describe("versioning", () => {
+  it("CHANGELOG.md has a section for the version in package.json", () => {
+    const root = path.join(import.meta.dirname, "../../..");
+    const { version } = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")) as { version: string };
+    expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(readFileSync(path.join(root, "CHANGELOG.md"), "utf8")).toContain(`## [${version}] - `);
+  });
+});

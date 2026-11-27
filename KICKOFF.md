@@ -209,6 +209,10 @@ keep them working:
   rate, and write it to report.json.
 - A feature built on a heuristic ships only after its precision and recall
   against the answer key are in eval.json and I have approved them.
+- Every deploy-worthy merge to main is a new W1913 version: bump "version"
+  in the root package.json (semver), add a "## [x.y.z] - date" section to
+  CHANGELOG.md (a test fails without it), and tag the merge "vx.y.z".
+  rebuild.sh checks that the live site reports that version and commit.
 - Keep README.md and CHANGELOG.md current. The og:image stays the first
   thing in the README, with badges directly under it.
 ```

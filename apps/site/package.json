@@ -1,6 +1,5 @@
 {
   "name": "@w1913/site",
-  "version": "0.1.0",
   "private": true,
   "description": "w1913.com: a writer's tool built on Webster's Revised Unabridged Dictionary (1913).",
   "license": "MIT",

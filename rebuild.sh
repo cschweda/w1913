@@ -25,7 +25,12 @@
 #      process in fork mode: a restart of a second or two; nginx covers it).
 #   6. Health gate on the live port. If it fails, the symlink goes back to
 #      the previous release automatically and PM2 reloads again.
-#   7. Optionally empties the nginx cache, then prunes old releases.
+#   7. Optionally empties the nginx cache.
+#   8. Public check through nginx at site.url; then prunes old releases.
+#
+# Every check (canary, live, public) requires /healthz to report the
+# version in package.json and the commit being deployed, then runs the
+# smoke paths. The last line names both: "Deployed W1913 v0.3.0 (abc123...)".
 #
 # Every run is logged to $W1913_LOG_DIR (default ~/deploy-logs/w1913).
 #
@@ -47,7 +52,7 @@
 #   W1913_KEEP          releases to keep             (deploy.keepReleases)
 #   W1913_LOG_DIR       deploy logs                  (deploy.logDir)
 #   W1913_NGINX_CACHE   nginx proxy_cache directory to empty after a deploy
-#   W1913_PUBLIC_URL    e.g. https://w1913.com: one public check at the end
+#   W1913_PUBLIC_URL    public address checked at the end  (site.url; "none" skips it)
 # =====================================================================
 
 _self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -94,7 +99,8 @@ SMOKE_PATHS="${W1913_SMOKE_PATHS:-$(cfg deploy.smokePaths "/ /sublime")}"
 KEEP="${W1913_KEEP:-$(cfg deploy.keepReleases 5)}"
 MAX_MEMORY="${W1913_MAX_MEMORY:-$(cfg deploy.maxMemory 450M)}"
 NGINX_CACHE="${W1913_NGINX_CACHE:-}"
-PUBLIC_URL="${W1913_PUBLIC_URL:-}"
+PUBLIC_URL="${W1913_PUBLIC_URL:-$(cfg site.url "")}"
+[ "$PUBLIC_URL" = "none" ] && PUBLIC_URL=""
 LOG_DIR="${W1913_LOG_DIR:-$(cfg deploy.logDir "$HOME/deploy-logs/w1913")}"
 STATE_DIR="$DEPLOY_ROOT/state"
 APP_NAME="$(cfg deploy.pm2Name w1913)"
@@ -166,6 +172,11 @@ _on_exit() {
     rollback-failed)
       echo "  The new release failed AND the automatic rollback did not come up healthy."
       echo "  The site may be down. Check:  pm2 status && pm2 logs $APP_NAME --lines 80" ;;
+    public-check)
+      echo "  The new release (v$VERSION, ${SHA:0:12}) is live and healthy on the droplet"
+      echo "  (port $PORT), but $PUBLIC_URL does not serve it. It was NOT rolled back."
+      echo "  Check nginx (docs/nginx-site.conf; Forge site Nginx settings) and DNS:"
+      echo "    curl -s $PUBLIC_URL/healthz" ;;
   esac
   [ -n "${REBUILD_LOG_FILE:-}" ] && echo "  Full log: $REBUILD_LOG_FILE"
   echo "====================================================================="
@@ -181,19 +192,37 @@ _http_code() {  # $1 = URL; prints the status code or 000
   curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$1" 2> /dev/null || echo "000"
 }
 
-_wait_200() {  # $1 = label, $2 = base URL; waits for /healthz, then smoke paths
-  local label="$1" base="$2" waited=0 code p
+# "version commit" as reported by a running site's /healthz, or nothing.
+_reported() {  # $1 = base URL
+  curl -s --max-time 10 "$1/healthz" 2> /dev/null \
+    | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{const j=JSON.parse(d);if(j.ok)console.log(j.version+" "+j.commit)}catch{}})' 2> /dev/null || true
+}
+
+# Smoke checks. Waits up to 60 s for /healthz to answer 200 and, when an
+# expected version and commit are given, to report exactly those (so a stale
+# process or a wrong proxy fails); then every smoke path must answer 200.
+_wait_200() {  # $1 = label, $2 = base URL, $3 = expected version (optional), $4 = expected commit (optional)
+  local label="$1" base="$2" want_version="${3:-}" want_commit="${4:-}" waited=0 code p got=""
   printf 'Waiting for %s' "$label"
   while :; do
     code="$(_http_code "$base/healthz")"
-    [ "$code" = "200" ] && break
+    if [ "$code" = "200" ]; then
+      [ -z "$want_commit" ] && break
+      got="$(_reported "$base")"
+      [ "$got" = "$want_version $want_commit" ] && break
+    fi
     if [ "$waited" -ge 60 ]; then
-      echo " gave up after ${waited}s (last /healthz: $code)."
+      if [ -n "$want_commit" ] && [ "$code" = "200" ]; then
+        echo " wrong release: it reports '${got:-nothing}', expected 'v$want_version ${want_commit:0:12}'."
+      else
+        echo " gave up after ${waited}s (last /healthz: $code)."
+      fi
       return 1
     fi
     printf '.'; sleep 2; waited=$((waited + 2))
   done
   echo " up after ~${waited}s."
+  [ -n "$want_commit" ] && echo "  /healthz -> v$want_version ${want_commit:0:12}"
   for p in $SMOKE_PATHS; do
     code="$(_http_code "$base$p")"
     echo "  $p -> $code"
@@ -329,6 +358,9 @@ if [ -z "${REBUILD_REEXECED:-}" ]; then
   fi
 fi
 SHA="$(git rev-parse HEAD)"
+# The W1913 version this commit declares (root package.json); every check
+# below requires the running site to report it, with the commit.
+VERSION="$(node -p "require('$REPO_DIR/package.json').version" 2> /dev/null || echo "unknown")"
 
 if [ ! -f apps/site/package.json ]; then
   echo ""
@@ -378,11 +410,12 @@ echo "Database: $(du -h "$_new_release/data/w1913.sqlite" | cut -f1)"
 # 4. Canary: run the new release on a spare port before it goes live.
 # ---------------------------------------------------------------------
 _stage="canary"
-NODE_ENV=production HOST=127.0.0.1 PORT="$CANARY_PORT" \
+# Run from the release root, as PM2 will, so it reads the release's .release-sha.
+( cd "$_new_release" && exec env NODE_ENV=production HOST=127.0.0.1 PORT="$CANARY_PORT" \
   W1913_DB_PATH="$_new_release/data/w1913.sqlite" \
-  node "$_new_release/apps/site/.output/server/index.mjs" > "$_new_release/canary.log" 2>&1 &
+  node "$_new_release/apps/site/.output/server/index.mjs" ) > "$_new_release/canary.log" 2>&1 &
 _canary_pid=$!
-if ! _wait_200 "the canary on :$CANARY_PORT" "http://127.0.0.1:$CANARY_PORT"; then
+if ! _wait_200 "the canary on :$CANARY_PORT" "http://127.0.0.1:$CANARY_PORT" "$VERSION" "$SHA"; then
   echo "Canary output (last 40 lines):"
   tail -n 40 "$_new_release/canary.log" | sed 's/^/    /'
   exit 1
@@ -401,7 +434,7 @@ _pm2_apply
 # 6. Live health gate, with automatic rollback.
 # ---------------------------------------------------------------------
 _stage="live-check"
-if ! _wait_200 "the live site on :$PORT" "http://127.0.0.1:$PORT"; then
+if ! _wait_200 "the live site on :$PORT" "http://127.0.0.1:$PORT" "$VERSION" "$SHA"; then
   if [ -n "$_prev_release" ] && [ -d "$_prev_release" ]; then
     echo "Live check failed. Rolling back to $(basename "$_prev_release")..."
     _switch_to "$_prev_release"
@@ -426,8 +459,18 @@ if [ -n "$NGINX_CACHE" ]; then
     echo "WARNING: could not empty $NGINX_CACHE (missing, or not writable by $(whoami)). Pages may be stale until it expires."
   fi
 fi
+
+# ---------------------------------------------------------------------
+# 8. Public check: the same smoke checks through nginx at the public
+# address, which must report the new version and commit. A failure here
+# is not rolled back (the droplet is healthy); it points at nginx or DNS.
+# ---------------------------------------------------------------------
 if [ -n "$PUBLIC_URL" ]; then
-  echo "Public check: $PUBLIC_URL/healthz -> $(_http_code "$PUBLIC_URL/healthz")"
+  _stage="public-check"
+  _wait_200 "the public site at $PUBLIC_URL" "$PUBLIC_URL" "$VERSION" "$SHA" || exit 1
+  _stage="cleanup"
+else
+  echo "Public check skipped (W1913_PUBLIC_URL=none)."
 fi
 
 # Keep the newest $KEEP releases (by name, which starts with a timestamp),
@@ -441,6 +484,6 @@ ls -1d "$DEPLOY_ROOT"/releases/*/ 2> /dev/null | sed 's:/$::' | sort -r | tail -
     done
 
 echo ""
-echo "Deployed ${SHA:0:12}: $(git log -1 --format=%s "$SHA")"
+echo "Deployed W1913 v$VERSION (${SHA:0:12}): $(git log -1 --format=%s "$SHA")"
 echo "Live: $(basename "$_live")"
 pm2 status "$APP_NAME" || true

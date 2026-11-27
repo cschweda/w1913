@@ -49,13 +49,30 @@ async function freeText(q: string) {
   await navigateTo({ path: "/w/go", query: { q: text } }, { external: false });
 }
 
+async function clear() {
+  seq++;
+  clearTimeout(timer);
+  term.value = "";
+  items.value = [];
+  selected.value = undefined;
+  await nextTick();
+  // The combobox keeps its own copy of the text; empty the element too and
+  // tell it, so the field shows what the state says.
+  const el = document.getElementById("lookup") as HTMLInputElement | null;
+  if (el && el.value) {
+    el.value = "";
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  focusInput();
+}
+
 function focusInput() {
   const el = document.getElementById("lookup");
   el?.focus();
 }
 defineShortcuts({ "/": focusInput, meta_k: focusInput });
 onMounted(() => {
-  if (props.autofocus && window.matchMedia("(pointer: fine)").matches) focusInput();
+  if (props.autofocus) focusInput();
 });
 
 // Sizes are set in the scoped CSS below (Nuxt UI's own size classes would
@@ -67,6 +84,7 @@ const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl 
 <template>
   <form role="search" :class="['box', size === 'hero' ? 'is-hero' : 'is-bar']" @submit.prevent="freeText(term)">
     <label for="lookup" class="cap lbl">Look up a word</label>
+    <div class="row">
     <UInputMenu
       id="lookup"
       v-model="selected"
@@ -76,7 +94,7 @@ const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl 
       ignore-filter
       :create-item="items.length ? false : { position: 'bottom', when: 'always' }"
       variant="none"
-      :placeholder="size === 'hero' ? 'sublime' : 'another word'"
+      :placeholder="size === 'hero' ? '' : 'another word'"
       class="field"
       :ui="{ root: 'w-full', base: inputClass, content: 'rounded-none border border-[var(--fg)] bg-[var(--bg)]', item: itemClass }"
       :reset-search-term-on-blur="false"
@@ -89,6 +107,8 @@ const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl 
         <span class="cap">Type a word</span>
       </template>
     </UInputMenu>
+    <button v-if="term" type="button" class="btn clear" @click="clear">Clear<span class="vh"> the search</span></button>
+    </div>
     <p v-if="size === 'bar'" class="hint" aria-hidden="true">Press <kbd>/</kbd> or <kbd>Ctrl K</kbd> to look up from anywhere</p>
   </form>
 </template>
@@ -96,7 +116,10 @@ const itemClass = computed(() => (props.size === "hero" ? "rounded-none text-xl 
 <style scoped>
 .box { margin: 0; }
 .lbl { display: block; margin-bottom: 4px; }
-.field { display: flex; width: 100%; }
+.row { display: flex; align-items: center; gap: 16px; }
+.field { display: flex; width: 100%; flex: 1; min-width: 0; }
+.clear { flex: none; }
+.is-hero .clear { min-height: 56px; padding: 0 22px; font-size: 18px; }
 .box :deep(input) { width: 100%; }
 .is-bar { max-width: 860px; }
 .is-hero :deep(input) { height: auto; padding-top: 4px; padding-bottom: 8px; font-size: clamp(40px, 8vw, 104px); font-weight: 700; letter-spacing: -.045em; line-height: 1.05; }

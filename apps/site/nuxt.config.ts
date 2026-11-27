@@ -2,9 +2,12 @@
 // Settings come from w1913.config.ts at the repository root; change them there.
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
 import config from "../../w1913.config.ts";
 
 const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
+// The one W1913 version (root package.json); see CHANGELOG.md "How versions work".
+const version = (JSON.parse(readFileSync(resolve(repoRoot, "package.json"), "utf8")) as { version: string }).version;
 const t = config.theme;
 const tokens = (v: Record<string, string>) => Object.entries(v).map(([k, c]) => `--${k}:${c}`).join(";");
 // The colour tokens, generated from w1913.config.ts: light on :root, dark on .dark.
@@ -24,6 +27,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // W1913_DB_PATH overrides this at runtime (rebuild.sh, dev.sh).
     dbPath: resolve(repoRoot, config.paths.devDatabase),
+    public: { version },
   },
   app: {
     head: {
