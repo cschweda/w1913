@@ -6,6 +6,7 @@ import config from "../../../../w1913.config";
 import { entryPath, RESERVED, slugify } from "../../shared/fold";
 import { abbreviationsIn } from "../../shared/abbreviations";
 import { prosodyOf } from "../../shared/prosody";
+import { definedTermLd, ldScript } from "../../shared/structured";
 
 interface Entry {
   id: string; anchor: string; headword: string; headword_marked: string | null; pos: string | null;
@@ -84,7 +85,12 @@ useSeoMeta({
   ogDescription: () => firstText.value,
   ogUrl: url,
 });
-useHead({ link: [{ rel: "canonical", href: url }] });
+const description = computed(() => `${page.headword}: ${firstText.value}`);
+useSeoMeta({ twitterDescription: () => firstText.value, twitterTitle: `${page.headword} · ${config.site.name}` });
+useHead({
+  link: [{ rel: "canonical", href: url, key: "canonical" }],
+  script: [ldScript(definedTermLd({ url, headword: page.headword, description: description.value, modified: useRuntimeConfig().public.buildDate as string }), "ld-page")],
+});
 </script>
 
 <template>
@@ -95,6 +101,7 @@ useHead({ link: [{ rel: "canonical", href: url }] });
         <SearchBox size="bar" class="lookup" />
         <h1 class="hw" :style="fit(page.headword)">{{ page.headword }}</h1>
         <div aria-hidden="true" class="bar" />
+        <SayIt :word="page.headword" />
         <p v-if="page.entries.length > 1" class="m count">{{ page.entries.length }} entries</p>
         <section v-for="e in page.entries" :id="e.anchor" :key="e.id" class="sec" :aria-labelledby="`${e.anchor}-h`">
           <h2 :id="`${e.anchor}-h`" class="hh" :style="fit(shownMarked(e.headword_marked, e.headword))">

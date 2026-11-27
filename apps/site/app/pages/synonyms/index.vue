@@ -13,7 +13,12 @@ const groups = computed(() => {
   }
   return [...m.entries()];
 });
-useSeoMeta({ title: "Synonyms", description: "The 1913 Webster's essays on how near-synonyms differ, collected A to Z." });
+import config from "../../../../../w1913.config";
+import { ldScript, webPageLd } from "../../../shared/structured";
+
+const synDescription = "All 624 essays from the 1913 Webster's on how near-synonyms differ (abandon, desert, forsake; subtle, sly), collected A to Z.";
+useSeoMeta({ title: "Synonyms", description: synDescription, ogDescription: synDescription, twitterDescription: synDescription });
+useHead({ script: [ldScript(webPageLd({ type: "CollectionPage", url: `${config.site.url}/synonyms`, name: "Synonyms · W1913", description: synDescription, modified: useRuntimeConfig().public.buildDate as string }), "ld-page")] });
 </script>
 
 <template>

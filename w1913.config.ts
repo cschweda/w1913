@@ -48,8 +48,19 @@ export const config = {
     url: "https://w1913.com",
     /** Title of the home page and of link previews for it. */
     title: "W1913: Webster's 1913, for writers",
-    /** Meta description of the home page (search results, link previews). Keep it under ~155 characters. */
-    description: "Webster's Revised Unabridged Dictionary (1913), read the way a writer reads it.",
+    /**
+     * Default meta description (search results, link previews, AI summaries)
+     * for pages without their own. Keep it between 80 and 155 characters.
+     */
+    description:
+      "Webster's Revised Unabridged Dictionary (1913), read the way a writer reads it: definitions, etymologies, synonyms, and essays on near-synonyms.",
+    /**
+     * The site's maker: <meta name="author"> and the publisher in the
+     * structured data. Change or empty it here; it appears on every page.
+     */
+    author: { name: "Christopher Schweda", url: "https://metaincognita.com" },
+    /** The day w1913.com first went live (datePublished in the structured data). DO NOT CHANGE. */
+    launched: "2026-11-27",
     /** The source repository, linked from the footer and the About page. */
     repo: "https://github.com/cschweda/w1913",
     /**

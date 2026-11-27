@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import config from "../../../../w1913.config";
 
-useSeoMeta({ title: "About", description: "What W1913 is, where its text comes from, and its licence." });
+import { ldScript, webPageLd } from "../../shared/structured";
+
+const aboutDescription = "What W1913 is: the 1913 Webster's from Project Gutenberg eBook #29765, its gaps, its public-domain licence, and its privacy.";
+useSeoMeta({ title: "About", description: aboutDescription, ogDescription: aboutDescription, twitterDescription: aboutDescription });
+useHead({ script: [ldScript(webPageLd({ type: "AboutPage", url: `${config.site.url}/about`, name: "About W1913", description: aboutDescription, modified: useRuntimeConfig().public.buildDate as string }), "ld-page")] });
 </script>
 
 <template>

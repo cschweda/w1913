@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // /synonyms/compare?w=abandon,desert,forsake: two or three words side by side.
+import config from "../../../../../w1913.config";
 import { entryPath } from "../../../shared/fold";
 
 interface Word { slug: string; headword: string; found: boolean; entries: { anchor: string; pos: string | null; pos_title: string | null; summary: string }[] }
@@ -11,6 +12,8 @@ if (error.value) throw createError({ statusCode: error.value.statusCode ?? 400, 
 const words = computed(() => data.value?.words ?? []);
 const title = computed(() => words.value.map((x) => x.headword).join(", "));
 useSeoMeta({ title: () => `Compare ${title.value}`, robots: "noindex" });
+// One compare page per set of words: the canonical address keeps the query.
+useHead({ link: [{ rel: "canonical", href: () => `${config.site.url}/synonyms/compare?w=${encodeURIComponent(w.value)}`, key: "canonical" }] });
 </script>
 
 <template>

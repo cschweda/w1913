@@ -27,7 +27,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // W1913_DB_PATH overrides this at runtime (rebuild.sh, dev.sh).
     dbPath: resolve(repoRoot, config.paths.devDatabase),
-    public: { version },
+    // buildDate: when this release was built (dateModified in the structured data).
+    public: { version, buildDate: new Date().toISOString().slice(0, 10) },
   },
   app: {
     head: {
@@ -35,6 +36,7 @@ export default defineNuxtConfig({
       title: config.site.title,
       meta: [
         { name: "description", content: config.site.description },
+        { name: "author", content: config.site.author.name },
         { property: "og:image", content: `${config.site.url}/og-image.png` },
         { property: "og:site_name", content: config.site.name },
         { name: "twitter:card", content: "summary_large_image" },

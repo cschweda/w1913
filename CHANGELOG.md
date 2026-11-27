@@ -17,6 +17,28 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-27
+
+### Added
+
+- **Say it**: a button under each headword that speaks the word with the device's own voice
+  (Web Speech API), preferring a local English voice, slightly slowed. Nothing is fetched or sent;
+  it works offline, says "your device's voice" beside it, and is hidden where speech is
+  unavailable. The 1913 text has no reliable pronunciations, so this is the device's reading.
+- Structured data on every page (schema.org JSON-LD): the site as a `WebSite` with a
+  `SearchAction` (`/w/go?q=`); each entry as a `DefinedTerm` in a `DefinedTermSet` based on the
+  1913 `Book` (ed. Noah Porter, G. & C. Merriam Co.); About as `AboutPage`; `/synonyms` as
+  `CollectionPage`; with `datePublished` (launch day) and `dateModified` (the release's build date).
+- `/llms.txt` (llmstxt.org): what W1913 is, its source and licence, and its main pages.
+- `<meta name="author">` and a publisher in the structured data (`site.author` in
+  `w1913.config.ts`).
+
+### Fixed
+
+- Every page has exactly one canonical link (the home page and others had none), an
+  `og:description`, a `twitter:description`, `og:type` and `og:url`. The default description is
+  145 characters (it was 79); About and Synonyms have their own.
+
 ## [0.4.0] - 2026-11-27
 
 ### Added
@@ -161,7 +183,8 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/cschweda/w1913/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/cschweda/w1913/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/cschweda/w1913/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/cschweda/w1913/compare/v0.3.0...v0.3.1
