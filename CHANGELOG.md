@@ -17,6 +17,18 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+### Added
+
+- **Deploy on release tags**: `.github/workflows/deploy.yml`. Pushing `vX.Y.Z` runs lint,
+  typecheck and the tests on GitHub, checks the tag is the tip of `main` and matches
+  `package.json`, triggers the Forge deploy through the `FORGE_DEPLOY_URL` repository secret,
+  and waits until w1913.com's `/healthz` reports that version and commit.
+
+### Fixed
+
+- `check.test.ts` no longer crashes when there is no database (as on GitHub); it skips, as the
+  other data-backed tests do.
+
 ## [0.17.0] - 2026-11-27
 
 Rhymes, like Synonyms.

@@ -1,0 +1,111 @@
+# Deploy W1913 when a release tag is pushed (vX.Y.Z), after the checks pass.
+#
+# Forge deploys the tip of `main` (rebuild.sh: canary, health checks, automatic
+# rollback). This workflow only presses Forge's Deploy button for you, through
+# the site's Deployment Trigger URL, and then waits until w1913.com reports the
+# tagged version and commit.
+#
+# Setup, once: in GitHub, Settings → Secrets and variables → Actions → New
+# repository secret, named FORGE_DEPLOY_URL, holding the site's "Deployment
+# Trigger URL" from Forge (site → Deployments). It is a password: anyone with it
+# can deploy. Never put it in the repository; regenerate it in Forge if it leaks.
+name: Deploy
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: read
+
+# One deploy at a time; a second tag waits for the first rather than cancelling it.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: The tag is the tip of main and matches package.json
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="$(node -p "require('./package.json').version")"
+          if [ "v${version}" != "${tag}" ]; then
+            echo "::error::Tag ${tag} does not match package.json version ${version}."
+            exit 1
+          fi
+          # Forge deploys main's tip, so the tag must be exactly that commit:
+          # otherwise the deploy would ship commits nobody tagged.
+          main="$(git rev-parse origin/main)"
+          if [ "${main}" != "${GITHUB_SHA}" ]; then
+            echo "::error::Tag ${tag} (${GITHUB_SHA}) is not the tip of main (${main}). Push main first, or tag main's tip."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # Tests that need the edition, the database or the tagged files skip
+      # themselves here (those are not in the repository); the rest run.
+      - name: Test
+        run: pnpm test
+
+  deploy:
+    name: Deploy to w1913.com
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: production
+      url: https://w1913.com
+    steps:
+      - name: Trigger the Forge deploy
+        env:
+          FORGE_DEPLOY_URL: ${{ secrets.FORGE_DEPLOY_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FORGE_DEPLOY_URL}" ]; then
+            echo "::error::The FORGE_DEPLOY_URL secret is not set (see the top of .github/workflows/deploy.yml)."
+            exit 1
+          fi
+          curl -fsS -X POST --max-time 30 -o /dev/null -w "Forge answered %{http_code}\n" "${FORGE_DEPLOY_URL}"
+
+      - name: Wait for w1913.com to report this release
+        run: |
+          set -euo pipefail
+          want_version="${GITHUB_REF_NAME#v}"
+          # rebuild.sh rebuilds editions and the database, so allow up to 20 minutes.
+          for i in $(seq 1 80); do
+            body="$(curl -fsS --max-time 10 https://w1913.com/healthz || true)"
+            version="$(printf '%s' "${body}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).version||"")}catch{}})')"
+            commit="$(printf '%s' "${body}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).commit||"")}catch{}})')"
+            if [ "${version}" = "${want_version}" ] && [ "${commit}" = "${GITHUB_SHA}" ]; then
+              echo "Live: W1913 v${version} (${commit})."
+              exit 0
+            fi
+            echo "Waiting (${i}/80): live is ${version:-?} (${commit:0:7})."
+            sleep 15
+          done
+          echo "::error::w1913.com did not report v${want_version} (${GITHUB_SHA}) within 20 minutes. Check the deploy log in Forge; rebuild.sh rolls back on failure."
+          exit 1

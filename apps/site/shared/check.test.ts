@@ -8,7 +8,8 @@ import { checkPassage } from "./check.ts";
 const db = path.join(import.meta.dirname, "../../..", config.paths.devDatabase);
 describe.skipIf(!existsSync(db))("period check against the word list", () => {
   const conn = existsSync(db) ? new Database(db, { readonly: true }) : null;
-  const words = new Set((conn?.prepare("SELECT DISTINCT fold FROM forms WHERE form NOT LIKE '%-' AND form NOT LIKE '-%'").all() as { fold: string }[]).map((r) => r.fold));
+  // The describe body runs even when skipped (no database, as in CI), so this must not throw then.
+  const words = new Set(((conn?.prepare("SELECT DISTINCT fold FROM forms WHERE form NOT LIKE '%-' AND form NOT LIKE '-%'").all() ?? []) as { fold: string }[]).map((r) => r.fold));
   const has = (f: string) => words.has(f);
   const missing = (t: string, skip = true) => checkPassage(t, has, skip).missing.map((m) => m.word);
 

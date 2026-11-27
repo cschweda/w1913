@@ -210,7 +210,7 @@ The main settings live in one file at the repository root, `w1913.config.ts`: th
 
 ### Deploying
 
-Deploys are manual: after a push to `main`, run `./rebuild.sh` in the checkout on the droplet. Forge's Quick Deploy stays off for this site.
+Deploys follow release tags: pushing `vX.Y.Z` runs `.github/workflows/deploy.yml`, which checks the code (lint, typecheck, tests), refuses a tag that is not the tip of `main` or does not match `package.json` (Forge deploys `main`'s tip, so anything else would ship untagged commits), presses Forge's Deploy through the site's Deployment Trigger URL (the `FORGE_DEPLOY_URL` secret; never in the repository), and waits up to 20 minutes for `/healthz` to report the tag's version and commit. A push to `main` alone never deploys: Forge's Quick Deploy stays off. By hand: Forge's Deploy button, or `./rebuild.sh` in the checkout on the droplet.
 
 - **Releases, not in-place builds.** Each deploy builds a complete release (`git archive` of HEAD, install, edition, SQLite import, Nuxt build) in `~/w1913-deploy/releases/<stamp>-<sha>/`. The live site is the `current` symlink. A build failure never touches what is serving.
 - **Canary, then switch.** The new release first runs on a spare port (3914) and must answer `/healthz` and the smoke paths (`/`, `/sublime`). Only then is `current` switched and PM2 restarted. W1913 runs as one process in fork mode, because cluster mode would ignore the pinned interpreter and run on the daemon's Node 22, where the Node 24 build of better-sqlite3 cannot load. The restart takes a second or two; nginx serves cached or stale pages through it.

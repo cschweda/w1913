@@ -104,7 +104,7 @@ pnpm --filter @w1913/data run eval:colloc   # phrase (collocation) precision and
 
 W1913 has one version, in the root `package.json`. Every release to `main` gets a new version, a section in [CHANGELOG.md](CHANGELOG.md) (a test fails without it), and a git tag. The site reports its version and commit at [`/healthz`](https://w1913.com/healthz) and in its footer.
 
-The site runs under PM2 on a Forge-provisioned DigitalOcean droplet. Pushing to `main` does not deploy; after a push, click **Deploy** in Forge or run, on the droplet:
+The site runs under PM2 on a Forge-provisioned DigitalOcean droplet. Pushing to `main` does not deploy. **Pushing a release tag does**: [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs lint, typecheck and the tests, checks that the tag is the tip of `main` and matches `package.json`, calls Forge's Deployment Trigger URL (the `FORGE_DEPLOY_URL` repository secret), and waits until `/healthz` reports the tagged version and commit. To deploy by hand instead, click **Deploy** in Forge or run, on the droplet:
 
 ```bash
 cd ~/w1913.com          # the checkout
