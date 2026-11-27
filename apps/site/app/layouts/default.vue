@@ -27,6 +27,7 @@ const workshop = config.site.workshop;
       </p>
     </footer>
     <SelectionLookup />
+    <UnusualPreview />
   </div>
 </template>
 

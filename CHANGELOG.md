@@ -17,6 +17,20 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-27
+
+### Added
+
+- **Unusual-word previews.** A word in a definition is marked with a dashed underline when it is
+  a headword itself and appears in at most 3 entries' definitions (16,238 words; about 9% of
+  senses), at most 2 per sense, the rarest first, never the entry's own word family. Measured from
+  the edition alone, with no outside word lists. Pointing at it (after 250 ms) or tabbing to it
+  shows a card with the word, its part of speech, and its first sense; Esc closes it, it stays
+  open while the pointer is on it, and it describes the link for screen readers (WCAG 1.4.13). On
+  touch screens the word simply opens its entry. The page's key explains the dashed underline.
+- The threshold, the number per sense, and the hover delay are settings in `w1913.config.ts`
+  (`features.unusualMaxEntries`, `unusualPerSense`, `previewDelayMs`).
+
 ## [0.5.0] - 2026-11-27
 
 ### Added
@@ -183,7 +197,8 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/cschweda/w1913/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/cschweda/w1913/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/cschweda/w1913/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/cschweda/w1913/compare/v0.3.1...v0.3.2

@@ -13,6 +13,7 @@ import config from "../../../w1913.config.ts";
 import { foldForCompare } from "../shared/fold.ts";
 import { posAnchor, posTitle } from "../shared/pos.ts";
 import { bodyHtml, essayHtml, metaHtml, prose, type Locate, type RenderableEntry } from "../shared/render.ts";
+import { definitionFrequency, unusualSpans } from "../shared/unusual.ts";
 import { entryPath } from "../shared/fold.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -78,7 +79,7 @@ db.exec(`
     id TEXT PRIMARY KEY, slug TEXT NOT NULL, ord INTEGER NOT NULL, homograph_no INTEGER NOT NULL,
     anchor TEXT NOT NULL, headword TEXT NOT NULL, headword_marked TEXT, pos TEXT, pos_title TEXT,
     letter TEXT NOT NULL, sense_count INTEGER NOT NULL, meta_html TEXT NOT NULL, body_html TEXT NOT NULL,
-    text TEXT NOT NULL, summary TEXT NOT NULL
+    text TEXT NOT NULL, summary TEXT NOT NULL, first_sense TEXT NOT NULL
   );
   CREATE TABLE syn_listed (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
   CREATE TABLE essays (id INTEGER PRIMARY KEY, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_anchor TEXT NOT NULL,
@@ -88,7 +89,28 @@ db.exec(`
   CREATE TABLE forms (fold TEXT NOT NULL, form TEXT NOT NULL, slug TEXT NOT NULL, kind TEXT NOT NULL, ord INTEGER NOT NULL);
   CREATE TABLE backlinks (slug TEXT NOT NULL, from_slug TEXT NOT NULL, from_headword TEXT NOT NULL, from_ord INTEGER NOT NULL);
 `);
-const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text,@summary)`);
+const insEntry = db.prepare(`INSERT INTO entries VALUES (@id,@slug,@ord,@homograph_no,@anchor,@headword,@headword_marked,@pos,@pos_title,@letter,@sense_count,@meta_html,@body_html,@text,@summary,@first_sense)`);
+
+// Unusual words (shared/unusual.ts): frequency over every entry's sense texts,
+// and headword lookup by folded spelling (first page in edition order).
+const senseTexts = (e: Entry) => e.senses.flatMap((s) => [s.text, ...s.sub.map((x) => x.text)]);
+const df = definitionFrequency(entries.map(senseTexts));
+const slugByFold = new Map<string, string>();
+for (const e of entries) for (const f of [e.headword, ...e.variants].map(foldForCompare)) if (f && !slugByFold.has(f)) slugByFold.set(f, slugOf(e));
+let unusualMarked = 0;
+const unusualFor = (e: Entry) => {
+  const ownStem = foldForCompare(e.headword).slice(0, 5);
+  return (text: string) => {
+    const spans = unusualSpans(text, { df, slugOf: (f) => slugByFold.get(f) ?? null, ownStem, maxEntries: config.features.unusualMaxEntries, perSense: config.features.unusualPerSense });
+    unusualMarked += spans.length;
+    return spans;
+  };
+};
+const firstSenseOf = (e: Entry) => {
+  const s = e.senses.find((x) => x.text.trim() || x.sub.length);
+  const t = s ? (s.text.trim() ? s.text : s.sub[0]?.text ?? "") : "";
+  return t.replace(/\s+/g, " ").trim().slice(0, 260);
+};
 const insListed = db.prepare(`INSERT INTO syn_listed VALUES (?,?,?,?)`);
 const insEssay = db.prepare(`INSERT INTO essays VALUES (?,?,?,?,?,?,?,?)`);
 const insEssayPage = db.prepare(`INSERT INTO essay_pages VALUES (?,?)`);
@@ -128,7 +150,7 @@ db.transaction(() => {
       headword: e.headword, headword_marked: e.marked, pos: e.pos, pos_title: e.pos ? posTitle(e.pos) : null,
       letter: (foldForCompare(e.headword)[0] ?? "#").toUpperCase(),
       sense_count: e.senses.filter((s) => s.n !== null).length,
-      meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor), text: e.text, summary: summaryOf(e),
+      meta_html: metaHtml(e, locate), body_html: bodyHtml(e, locate, anchor, unusualFor(e)), text: e.text, summary: summaryOf(e), first_sense: firstSenseOf(e),
     });
     const seen = new Set<string>();
     for (const [form, kind] of [[e.headword, "headword"], ...e.variants.map((v) => [v, "variant"])] as [string, string][]) {
@@ -193,5 +215,5 @@ db.close();
 renameSync(tmp, dbPath);
 // A slug that folds two different spellings together would make a page show
 // entries that do not match its headword; report it rather than hide it.
-console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, ${[...backlinks.values()].reduce((a, m) => a + m.size, 0)} backlinks, in ${Math.round(performance.now() - t0)} ms`);
+console.log(`Imported edition ${manifest.version}: ${entries.length} entries, ${pages.size} pages, ${[...backlinks.values()].reduce((a, m) => a + m.size, 0)} backlinks, ${unusualMarked} unusual words, in ${Math.round(performance.now() - t0)} ms`);
 console.log(`  ${dbPath}`);

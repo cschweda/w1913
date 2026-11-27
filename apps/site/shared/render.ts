@@ -3,6 +3,8 @@
 // Phase 1 shows quotations and labels as printed, inside the sense text;
 // known abbreviations are decoded with <abbr> (shared/abbreviations.ts).
 import { abbreviate } from "./abbreviations.ts";
+import { entryPath } from "./fold.ts";
+import type { UnusualSpan } from "./unusual.ts";
 
 
 export interface Xref { start: number; end: number; to: string; id: string | null; sense: number | null }
@@ -49,7 +51,7 @@ export function richProse(s: string, context: Context): string {
 }
 
 /** A block's text as HTML paragraphs, with its cross-references linked and abbreviations decoded. */
-export function blockHtml(b: Block, locate: Locate, tag = "p", cls = "", context: Context = "text"): string {
+export function blockHtml(b: Block, locate: Locate, tag = "p", cls = "", context: Context = "text", unusual: UnusualSpan[] = []): string {
   const paras = b.text.split(/\n\n/);
   let offset = 0;
   const out: string[] = [];
@@ -57,16 +59,28 @@ export function blockHtml(b: Block, locate: Locate, tag = "p", cls = "", context
     const start = offset;
     const end = start + para.length;
     offset = end + 2;
-    const links = b.xrefs.filter((x) => x.id && x.start >= start && x.end <= end).sort((a, c) => a.start - c.start);
+    // Cross-references and unusual words, in order; an unusual word that
+    // overlaps a cross-reference is dropped (the cross-reference wins).
+    type Mark = { start: number; end: number; html: () => string };
+    const marks: Mark[] = [];
+    for (const x of b.xrefs) {
+      if (!x.id || x.start < start || x.end > end) continue;
+      const where = locate(x.id);
+      if (!where) continue;
+      const hash = x.sense ? `${where.anchor}-${x.sense}` : where.anchor;
+      marks.push({ start: x.start, end: x.end, html: () => `<a href="${where.path}#${hash}" class="x">${escapeHtml(b.text.slice(x.start, x.end))}</a>` });
+    }
+    for (const u of unusual) {
+      if (u.start < start || u.end > end || marks.some((m) => u.start < m.end && m.start < u.end)) continue;
+      marks.push({ start: u.start, end: u.end, html: () => `<a href="${entryPath(u.slug)}" class="rare" data-preview="${u.slug}">${escapeHtml(b.text.slice(u.start, u.end))}</a>` });
+    }
+    marks.sort((a, c) => a.start - c.start);
     let html = "";
     let at = start;
-    for (const x of links) {
-      const where = locate(x.id!);
-      if (!where) continue;
-      html += richProse(b.text.slice(at, x.start), context);
-      const hash = x.sense ? `${where.anchor}-${x.sense}` : where.anchor;
-      html += `<a href="${where.path}#${hash}" class="x">${escapeHtml(b.text.slice(x.start, x.end))}</a>`;
-      at = x.end;
+    for (const m of marks) {
+      html += richProse(b.text.slice(at, m.start), context);
+      html += m.html();
+      at = m.end;
     }
     html += richProse(b.text.slice(at, end), context);
     out.push(`<${tag}${cls ? ` class="${cls}"` : ""}>${html}</${tag}>`);
@@ -85,10 +99,14 @@ export function metaHtml(e: RenderableEntry, locate: Locate): string {
   return lines.join("");
 }
 
-function senseInner(s: Sense, locate: Locate, anchor: string): string {
-  let html = s.text ? blockHtml(s, locate, "p", "st") : "";
+/** Finds unusual words in a sense's text (shared/unusual.ts); none by default. */
+export type UnusualFinder = (text: string) => UnusualSpan[];
+const NONE: UnusualFinder = () => [];
+
+function senseInner(s: Sense, locate: Locate, anchor: string, unusual: UnusualFinder): string {
+  let html = s.text ? blockHtml(s, locate, "p", "st", "text", unusual(s.text)) : "";
   if (s.sub.length) {
-    html += `<ol class="sub" type="a">${s.sub.map((x) => `<li id="${anchor}-${s.n ?? "u"}${x.letter}" value="${x.letter.charCodeAt(0) - 96}">${blockHtml(x, locate, "p", "st")}</li>`).join("")}</ol>`;
+    html += `<ol class="sub" type="a">${s.sub.map((x) => `<li id="${anchor}-${s.n ?? "u"}${x.letter}" value="${x.letter.charCodeAt(0) - 96}">${blockHtml(x, locate, "p", "st", "text", unusual(x.text))}</li>`).join("")}</ol>`;
   }
   for (const n of s.notes) html += noteHtml(n, locate);
   return html;
@@ -104,7 +122,7 @@ function noteHtml(n: Block, locate: Locate): string {
  * sense is a paragraph of its own. Entry-level notes come first, the Syn.
  * paragraph last, shown as a plain line until data 0.3 (DESIGN.md §4a).
  */
-export function bodyHtml(e: RenderableEntry, locate: Locate, anchor: string): string {
+export function bodyHtml(e: RenderableEntry, locate: Locate, anchor: string, unusual: UnusualFinder = NONE): string {
   const parts: string[] = e.notes.map((n) => noteHtml(n, locate));
   let list: string[] = [];
   const flush = () => {
@@ -113,10 +131,10 @@ export function bodyHtml(e: RenderableEntry, locate: Locate, anchor: string): st
   };
   for (const s of e.senses) {
     if (s.n !== null) {
-      list.push(`<li id="${anchor}-${s.n}" value="${s.n}">${senseInner(s, locate, anchor)}</li>`);
+      list.push(`<li id="${anchor}-${s.n}" value="${s.n}">${senseInner(s, locate, anchor, unusual)}</li>`);
     } else {
       flush();
-      parts.push(`<div class="d">${senseInner(s, locate, anchor)}</div>`);
+      parts.push(`<div class="d">${senseInner(s, locate, anchor, unusual)}</div>`);
     }
   }
   flush();

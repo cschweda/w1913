@@ -168,6 +168,16 @@ export const config = {
     didYouMean: 6,
     /** Milliseconds to wait after typing before asking for suggestions. */
     suggestDelayMs: 120,
+    /**
+     * Unusual-word previews: a word in a definition is marked when it is a
+     * headword used in at most this many entries' definitions. 3 marks about
+     * 9% of senses. Higher marks more; the database must be re-imported.
+     */
+    unusualMaxEntries: 3,
+    /** At most this many unusual words are marked in one sense. */
+    unusualPerSense: 2,
+    /** Milliseconds to wait before showing a preview on pointer hover. */
+    previewDelayMs: 250,
   },
 
   // ---------------------------------------------------------------------------

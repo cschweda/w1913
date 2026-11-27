@@ -62,6 +62,7 @@ const fit = (s: string) => ({ "--n": String(longestRun(s)) });
 const prosody = computed(() => Object.fromEntries(page.entries.map((e) => [e.id, prosodyOf(e.headword_marked)])));
 
 // The key: every abbreviation decoded on this page, parts of speech included.
+const hasUnusual = computed(() => page.entries.some((e) => e.body_html.includes('class="rare"')));
 const abbreviations = computed(() => {
   const html = page.entries
     .map((e) => `${e.pos && e.pos_title ? `<abbr title="${e.pos_title}">${e.pos}</abbr>` : ""}${e.meta_html}${e.body_html}`)
@@ -149,8 +150,12 @@ useHead({
           </button>
         </section>
 
-        <section v-if="abbreviations.length" class="sec more" aria-labelledby="abbr-h">
-          <h2 id="abbr-h" class="hh small">Abbreviations on this page</h2>
+        <section v-if="abbreviations.length || hasUnusual" class="sec more" aria-labelledby="abbr-h">
+          <h2 id="abbr-h" class="hh small">Key</h2>
+          <p v-if="hasUnusual" class="m keyline">
+            <span class="rare-sample" aria-hidden="true">word</span> A dashed underline marks a word that is rare in the
+            dictionary's own definitions: point at it, or tab to it, for its first sense.
+          </p>
           <dl class="key">
             <div v-for="a in abbreviations" :key="a.abbr"><dt>{{ a.abbr }}</dt><dd>{{ a.meaning }}</dd></div>
           </dl>
@@ -186,6 +191,8 @@ useHead({
 .n { font-size: 15px; font-weight: 400; color: var(--mu); margin-left: 8px; }
 .back { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 18px; line-height: 1.8; }
 .all { margin-top: 16px; }
+.keyline { display: flex; gap: 12px; align-items: baseline; }
+.rare-sample { color: var(--fg); border-bottom: 1px dashed var(--ac); }
 .key { margin: 16px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 24px; font-size: 15px; }
 .key div { display: flex; gap: 10px; }
 .key dt { font-weight: 700; min-width: 56px; }

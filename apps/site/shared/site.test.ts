@@ -174,3 +174,33 @@ describe("synonyms rendering", () => {
     expect(compareHref([{ text: "Abandon", id: "abandon-1" }, { text: "Nowhere", id: null }], loc)).toBeNull();
   });
 });
+
+import { definitionFrequency, unusualSpans } from "./unusual.ts";
+
+describe("unusual words", () => {
+  const df = definitionFrequency([
+    ["Amazement or consternation; terror."], ["Great consternation."], ["Mere terror and terror again."],
+    ["A sudden terror."], ["Terror, plainly."], ["terror once more"],
+  ]);
+  const opts = (own = "") => ({ df, slugOf: (f: string) => ({ consternation: "consternation", amazement: "amazement" })[f] ?? null, ownStem: own, maxEntries: 3, perSense: 2 });
+  it("counts each entry once", () => {
+    expect(df.get("consternation")).toBe(2);
+    expect(df.get("terror")).toBe(4);
+  });
+  it("marks a rare headword, not a common one or a non-headword", () => {
+    expect(unusualSpans("Loss of courage; consternation and terror.", opts())).toEqual([{ start: 17, end: 30, slug: "consternation" }]);
+  });
+  it("skips the entry's own family", () => {
+    expect(unusualSpans("consternation", opts("const"))).toEqual([]);
+  });
+  it("marks at most the configured number, rarest first, in text order", () => {
+    const spans = unusualSpans("amazement then consternation", { ...opts(), perSense: 1 });
+    expect(spans).toHaveLength(1);
+  });
+  it("renders as a dashed link, and never on top of a cross-reference", () => {
+    const loc: Locate = (id) => (id === "consternation-1" ? { path: "/consternation", slug: "consternation", anchor: "n" } : null);
+    const block = { text: "See Consternation; consternation.", xrefs: [{ start: 4, end: 17, to: "Consternation", id: "consternation-1", sense: null }] };
+    const html = blockHtml(block, loc, "p", "", "text", [{ start: 4, end: 17, slug: "consternation" }, { start: 19, end: 32, slug: "consternation" }]);
+    expect(html).toBe('<p>See <a href="/consternation#n" class="x">Consternation</a>; <a href="/consternation" class="rare" data-preview="consternation">consternation</a>.</p>');
+  });
+});

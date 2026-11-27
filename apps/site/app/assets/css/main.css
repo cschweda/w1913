@@ -107,3 +107,8 @@ abbr[title] { text-decoration: underline dotted var(--mu); text-underline-offset
 .et + .et { margin-top: 10px; }
 .cmp { margin: 8px 0 0; font-size: 15px; }
 .cmp a { border-bottom: 1px solid var(--ac); min-height: 44px; }
+
+/* Unusual words (shared/unusual.ts): a dashed accent underline; a preview on
+   hover or focus (UnusualPreview.vue). */
+a.rare { border-bottom: 1px dashed var(--ac); }
+a.rare:hover, a.rare:focus-visible { border-bottom-style: solid; }
