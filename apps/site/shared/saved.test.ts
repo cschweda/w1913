@@ -15,7 +15,7 @@ describe("saved words", () => {
   it("round-trips through an export file", () => {
     const words = [w("saunter", "2026-11-27T10:00:00.000Z", "Saunter")];
     const r = parseSavedFile(JSON.stringify(toSavedFile(words)));
-    expect(r).toEqual({ words, skipped: 0 });
+    expect(r).toEqual({ words, skipped: 0, lists: [] });
   });
   it("refuses files that are not saved words, and skips bad entries", () => {
     expect(parseSavedFile("not json")).toEqual({ error: "That file is not JSON." });

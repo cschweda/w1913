@@ -121,6 +121,7 @@ useHead({
         <div class="tools">
           <SayIt :word="page.headword" />
           <SaveButton :slug="page.slug" :headword="page.headword" />
+          <AddToList :slug="page.slug" :headword="page.headword" />
           <CiteButton :slug="page.slug" :headword="page.headword" :path="entryPath(page.slug)" />
         </div>
         <p v-if="page.labels.length" class="m here">

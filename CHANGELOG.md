@@ -17,6 +17,25 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-27
+
+Named lists: words gathered by purpose, kept in the browser.
+
+### Added
+
+- **Lists** on every entry, beside Save: tick the lists the word belongs in, or make a new list
+  with it ("Chapter 3", "Sea words"). Keyboard and screen-reader friendly (a disclosure button,
+  a checkbox per list, Escape closes it).
+- **`/saved` shows your lists**, and `/saved?list=<id>` one list: rename, delete (confirmed in
+  place), remove words, and **Study them as cards** (a deck of up to 20 of its words).
+- **Export and import carry lists** (file version 2; version 1 files still import). Imported
+  lists merge with yours by name. At most 100 lists of 2,000 words; nothing leaves the browser.
+
+### Changed
+
+- The footer link reads "Saved words and lists", and the footer links' underlines sit a little
+  closer to the words.
+
 ## [0.14.0] - 2026-11-27
 
 Phrases everywhere the words are, and the top-300 authors pass.

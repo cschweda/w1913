@@ -1,8 +1,11 @@
 // Saved words (DESIGN.md §4, "Keeping"): kept in the browser only, exported
 // and imported as a small JSON file. Pure functions, so the rules are tested.
 
+import { readLists, type NamedList } from "./lists.ts";
+
 export interface SavedWord { slug: string; headword: string; saved: string }
-export interface SavedFile { format: "w1913-saved"; version: 1; exported: string; words: SavedWord[] }
+/** Version 2 (v0.15.0) adds named lists; version 1 files have only words. */
+export interface SavedFile { format: "w1913-saved"; version: 1 | 2; exported: string; words: SavedWord[]; lists?: NamedList[] }
 
 /** At most this many saved words; the oldest beyond it are dropped. */
 export const MAX_SAVED = 5000;
@@ -24,15 +27,16 @@ export function mergeSaved(a: SavedWord[], b: SavedWord[]): SavedWord[] {
   return [...by.values()].sort((x, y) => Date.parse(y.saved) - Date.parse(x.saved)).slice(0, MAX_SAVED);
 }
 
-export function toSavedFile(words: SavedWord[], now = new Date()): SavedFile {
-  return { format: "w1913-saved", version: 1, exported: now.toISOString(), words };
+export function toSavedFile(words: SavedWord[], now = new Date(), lists: NamedList[] = []): SavedFile {
+  return { format: "w1913-saved", version: 2, exported: now.toISOString(), words, lists };
 }
 
 /**
  * Rule: an import is a W1913 saved-words file (or a bare array of words);
- * entries that are not valid saved words are skipped and counted.
+ * entries that are not valid saved words are skipped and counted. A version 2
+ * file also carries named lists (read leniently, as stored ones are).
  */
-export function parseSavedFile(text: string): { words: SavedWord[]; skipped: number } | { error: string } {
+export function parseSavedFile(text: string): { words: SavedWord[]; skipped: number; lists: NamedList[] } | { error: string } {
   let data: unknown;
   try {
     data = JSON.parse(text);
@@ -42,5 +46,6 @@ export function parseSavedFile(text: string): { words: SavedWord[]; skipped: num
   const list = Array.isArray(data) ? data : (data as SavedFile)?.format === "w1913-saved" ? (data as SavedFile).words : null;
   if (!Array.isArray(list)) return { error: "That is not a W1913 saved-words file." };
   const words = list.filter(isSavedWord).map((w) => ({ slug: w.slug, headword: w.headword, saved: new Date(w.saved).toISOString() }));
-  return { words, skipped: list.length - words.length };
+  const lists = Array.isArray(data) ? [] : readLists((data as SavedFile).lists);
+  return { words, skipped: list.length - words.length, lists };
 }

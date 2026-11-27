@@ -23,6 +23,7 @@ const flipped = ref(false);
 const loading = ref(true);
 const { trail } = useTrail();
 const { saved, has: isSaved, toggle: toggleSaved } = useSaved();
+const { find: findList, ready: listsReady } = useLists();
 const rated = ref("");
 const { data: labelList } = await useFetch<{ code: string; name: string }[]>("/_w/labels", { key: "labels-for-cards" });
 const labelName = (code: string) => labelList.value?.find((l) => l.code === code)?.name ?? code;
@@ -41,6 +42,7 @@ const deckLabel = computed(() => {
   if (d.startsWith("label:")) return `${labelName(d.slice(6))} deck`;
   if (d.startsWith("q:")) return `Search deck: “${d.slice(2)}”`;
   if (d.startsWith("author:")) return `${authorName.value ?? d.slice(7)} deck`;
+  if (d.startsWith("list:")) return `${findList(d.slice(5))?.name ?? "List"} deck`;
   return "Deck";
 });
 
@@ -55,6 +57,11 @@ async function deal() {
     } else if (deckName.value === "saved") {
       // Up to a deck's worth of saved words, at random (DESIGN.md §4, Saved deck).
       const slugs = saved.value.map((w) => w.slug).sort(() => Math.random() - 0.5).slice(0, config.features.deckSize);
+      cards.value = slugs.length ? await $fetch<Card[]>("/_w/cards", { query: { slugs: slugs.join(",") } }) : [];
+    } else if (deckName.value.startsWith("list:")) {
+      // A named list (kept in this browser): up to a deck's worth of its words, at random.
+      if (!listsReady.value) await new Promise<void>((r) => { const stop = watch(listsReady, (v) => { if (v) { stop(); r(); } }, { immediate: true }); });
+      const slugs = (findList(deckName.value.slice(5))?.words ?? []).map((w) => w.slug).sort(() => Math.random() - 0.5).slice(0, config.features.deckSize);
       cards.value = slugs.length ? await $fetch<Card[]>("/_w/cards", { query: { slugs: slugs.join(",") } }) : [];
     } else {
       cards.value = await $fetch<Card[]>("/_w/cards", { query: { deck: deckName.value } });
@@ -141,6 +148,7 @@ useHead({ script: [ldScript(webPageLd({ url: `${config.site.url}/cards`, name: "
         <div v-else-if="!card" class="empty">
           <p v-if="deckName === 'trail'" class="m">Your trail is empty. Look up a few words, then come back for a deck of them.</p>
           <p v-else-if="deckName === 'saved'" class="m">No saved words yet. Use <b>Save</b> on an entry, or <b>New to me</b> on a card.</p>
+          <p v-else-if="deckName.startsWith('list:')" class="m">This list has no words yet, or is not in this browser. Use <b>Lists</b> on any entry to add some.</p>
           <p v-else class="m">No cards in this deck.</p>
           <NuxtLink to="/" class="t x">Look up a word</NuxtLink>
         </div>

@@ -17,7 +17,7 @@ const workshop = config.site.workshop;
       <nav aria-label="Site links" class="links">
         <a :href="`${repo}/blob/main/CHANGELOG.md`" class="t">W1913 v{{ version }}</a>
         <NuxtLink to="/about" class="t">About</NuxtLink>
-        <NuxtLink to="/saved" class="t">Saved words</NuxtLink>
+        <NuxtLink to="/saved" class="t">Saved words and lists</NuxtLink>
         <a :href="repo" class="t">Source on GitHub</a>
         <a :href="workshop.url" class="t">{{ workshop.name }}</a>
       </nav>
@@ -38,7 +38,7 @@ const workshop = config.site.workshop;
 .foot { border-top: 1px solid var(--ln); padding-top: 20px; padding-bottom: 32px; font-size: 13px; line-height: 1.5; color: var(--mu); }
 .foot p { max-width: 860px; margin: 0; }
 .links { display: flex; flex-wrap: wrap; gap: 0 28px; margin-bottom: 8px; font-size: 14px; color: var(--fg); }
-.links a { border-bottom: 1px solid var(--ac); min-height: 44px; }
+.links a { border-bottom: 1px solid var(--ac); min-height: 44px; box-sizing: border-box; align-items: flex-end; padding-bottom: 7px; }
 .skip { position: absolute; left: 8px; top: -60px; z-index: 50; padding: 10px 14px; background: var(--fg); color: var(--bg); }
 .skip:focus { top: 8px; }
 </style>

@@ -368,7 +368,7 @@ More play than tool, but reading a dictionary is how many writers find words, an
 
 ### Keeping
 
-- **Saved words and lists** in `localStorage` (try/catch), export/import as JSON. Saved words shipped in v0.11.0: a Save toggle on each entry (`aria-pressed`, with a status message), `/saved` (footer link) with remove, remove all (confirmed in place), export and import (a `w1913-saved` JSON file; invalid entries are skipped and counted; at most 5,000 words). Named lists are not built yet.
+- **Saved words and lists** in `localStorage` (try/catch), export/import as JSON. Saved words shipped in v0.11.0: a Save toggle on each entry (`aria-pressed`, with a status message), `/saved` (footer link) with remove, remove all (confirmed in place), export and import (a `w1913-saved` JSON file; invalid entries are skipped and counted; at most 5,000 words). **Named lists shipped in v0.15.0:** a **Lists** control on each entry (a disclosure button opening checkboxes, one per list, and a field to make a new list with the word in it); `/saved` gains a Lists section, and `/saved?list=<id>` shows one list with rename, delete (confirmed in place), remove, and "Study them as cards" (the `list:<id>` deck, up to 20 of its words at random). Stored under `w1913-lists`; at most 100 lists of 2,000 words; names unique in any case. The export file becomes version 2 (words and lists); version 1 files still import, and lists merge by name.
 - **Copy with citation**, plain text and Markdown.
 
 ### Deferred
