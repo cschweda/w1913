@@ -17,7 +17,7 @@ Showing definitions is table stakes; three sites already do it. W1913 earns its 
 | The writer's question | What W1913 does | Data it rests on |
 |---|---|---|
 | "What does this word really mean?" | A readable entry, opened from anywhere in one step | ~113,400 entries |
-| "Is there a better word?" | Thesaurus view with the dictionary's own essays on how near-synonyms differ | ~3,270 synonym paragraphs, ~560 of them discursive |
+| "Is there a better word?" | Thesaurus view with the dictionary's own essays on how near-synonyms differ | 3,254 synonym sections, 624 essays on how near-synonyms differ |
 | "What's the word for…?" | Search inside definitions | Every definition |
 | "I need a word with this rhythm." | Filter by syllable count and stress pattern | Stress marks on ~99,000 entries |
 | "Would my 1890s narrator say this?" | Period check: paste a passage, see which words this dictionary does not contain | ~102,300 distinct headwords |
@@ -314,7 +314,7 @@ Everything is built from the plain text. Features marked **P** rest on structure
 ### "Is there a better word?"
 
 - **Thesaurus panel** (P): the words from the entry's own `Syn.` list, plus every other entry whose list names this word.
-- **The ~560 synonym essays** (P), shown in full on each word they discuss and collected at `/synonyms`.
+- **The 624 synonym essays** (P), shown in full on each word they discuss and collected at `/synonyms` (shipped in v0.4.0, data 0.3). An essay's heading names the words it compares; 24 essays have no heading and discuss their entry's list.
 - **Compare view** (P): two or three words side by side.
 
 ### "What's the word for…?"
