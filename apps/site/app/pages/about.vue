@@ -15,7 +15,7 @@ useSeoMeta({ title: "About", description: "What W1913 is, where its text comes f
     </p>
     <h2>The text</h2>
     <p>
-      Every word comes from Project Gutenberg eBook #29765, which Project Gutenberg catalogues as public domain in the
+      Every word comes from <a :href="config.site.source.url" class="x">{{ config.site.source.name }}</a>, which Project Gutenberg catalogues as public domain in the
       USA. Its Greek and some symbols were never transcribed; where they were, the dictionary shows the gap rather than
       guessing. Typos are corrected only after a person checks them against the printed page.
     </p>

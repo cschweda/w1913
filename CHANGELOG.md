@@ -17,6 +17,13 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-27
+
+### Changed
+
+- The About page and the footer link "Project Gutenberg eBook #29765" to its page at
+  gutenberg.org (`site.source` in `w1913.config.ts`).
+
 ## [0.3.1] - 2026-11-27
 
 ### Added
@@ -132,7 +139,8 @@ First public release: w1913.com.
   p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of
   speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
-[Unreleased]: https://github.com/cschweda/w1913/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/cschweda/w1913/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/cschweda/w1913/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/cschweda/w1913/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/cschweda/w1913/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/cschweda/w1913/compare/v0.1.2...v0.2.0

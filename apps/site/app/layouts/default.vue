@@ -21,7 +21,7 @@ const workshop = config.site.workshop;
         <a :href="workshop.url" class="t">{{ workshop.name }}</a>
       </nav>
       <p>
-        Webster's Revised Unabridged Dictionary (1913), from Project Gutenberg eBook #29765. The text is in the public
+        Webster's Revised Unabridged Dictionary (1913), from <a :href="config.site.source.url" class="x">{{ config.site.source.name }}</a>. The text is in the public
         domain; this edition is <NuxtLink to="/about" class="x">CC0</NuxtLink>. A 1913 dictionary: senses, spellings,
         and attitudes may have changed since.
       </p>

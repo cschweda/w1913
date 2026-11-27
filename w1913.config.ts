@@ -52,6 +52,12 @@ export const config = {
     description: "Webster's Revised Unabridged Dictionary (1913), read the way a writer reads it.",
     /** The source repository, linked from the footer and the About page. */
     repo: "https://github.com/cschweda/w1913",
+    /**
+     * The canonical source text, linked from the About page and the footer.
+     * DO NOT CHANGE the eBook number: every word on the site comes from it
+     * (DESIGN.md §2), and its checksum is pinned in packages/data/checksums.json.
+     */
+    source: { name: "Project Gutenberg eBook #29765", url: "https://www.gutenberg.org/ebooks/29765" },
     /** The maker's workshop of apps, linked from the footer. */
     workshop: { name: "Metaincognita Workshop", url: "https://metaincognita.com" },
     /** Words offered as examples on the home page. Any headwords will do. */
