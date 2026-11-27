@@ -3,7 +3,7 @@
 **Name:** W1913 (`w1913.com`; the abbreviation the original transcribers used for this dictionary)
 **Author:** Christopher Schweda
 **Repository:** https://github.com/cschweda/w1913
-**Status:** Draft 5.4 — 27 November 2026 (corrections after checking the canonical file; changes are listed in §9)
+**Status:** Draft 5.5 — 27 November 2026 (Phase 0 findings; offline use instead of an API; changes are listed in §9)
 **Companion documents:** `KICKOFF.md` (Claude Code kickoff prompt) · `docs/ui/` (static interface mockups, §4a)
 
 ---
@@ -64,7 +64,7 @@ Gutenberg revises this file occasionally (last in July 2025). The checksum is pi
 
 The file has CRLF line endings. The checksum is computed on the file as fetched; the segmenter normalises line endings to LF before anything else, and that is the only transformation applied before parsing.
 
-**Availability.** From 23 to 27 Nov 2026, gutenberg.org answered automated requests for these files with HTTP 503. The download step therefore accepts a copy placed by hand at `cache/sources/29765.txt` (relative to the repository root) and verifies it against the checksum above. A verified copy is already in place there.
+**Availability.** From 23 to 27 Nov 2026, gutenberg.org answered automated requests for these files with HTTP 503. The download step therefore accepts a copy placed by hand at `cache/sources/29765.txt` (relative to the repository root) and verifies it against the checksum above, and otherwise tries gutenberg.org first and Project Gutenberg's own mirror, `gutenberg.pglaf.org`, second. The mirror served all eleven tagged files on 27 Nov 2026 while gutenberg.org was down; their checksums are recorded in `packages/data/checksums.json`.
 
 **Tagged files** (all under `https://www.gutenberg.org/files/`):
 `660/old/pgw050ab.txt` · `661/old/pgw050c.zip` (zip only) · `662/old/pgw050de.txt` · `663/old/pgw050fh.txt` · `664/old/pgw050il.txt` · `665/old/pgw050mo.txt` · `666/old/pgw050pq.txt` · `667/old/pgw050r.txt` · `668/old/pgw050s.txt` · `669/old/pgw050tw.txt` · `670/old/pgw050xz.txt`
@@ -92,14 +92,18 @@ Syn.
  -- Exalted; lofty; noble; majestic. See Grand.
 ```
 
-- **Entry boundary:** a blank line, then a line in capitals. 113,412 such lines (a looser test finds 113,422; Phase 0 settles the exact rule); 4,310 list variants separated by `;` (`ABATIS; ABATTIS`). ~102,300–102,500 distinct headwords.
-- **Header line:** the headword with syllable and stress marks, then part of speech. Marks present in 99,368 entries; a part-of-speech abbreviation detected in 108,493. The marks are `*` between syllables, `"` after a primary-stressed syllable, and `` ` `` after a secondary one (`Sub*lime"`, `Ac`e*to*ne"mi*a`).
+- **Entry boundary:** a blank line, then a line in capitals. **113,409 entries** (measured in Phase 0; the earlier 113,412 counted three headword lines that wrap onto a second line twice, e.g. `CONSOLATION GAME; …; CONSOLATION` / `RACE`). 4,310 list variants separated by `;` (`ABATIS; ABATTIS`). 102,492 distinct headword-line forms. The 18 alphabet-letter entries (`B`, `Y`) have no header line, and three stray lines between entries (`M.`, `P.`, `X.`) look like volume markers.
+- **Header line:** the headword with syllable and stress marks, then part of speech. Marks present in 99,427 entries; a part of speech from a closed vocabulary detected in 109,225. The marks are `*` between syllables, `"` after a primary-stressed syllable, and `` ` `` after a secondary one (`Sub*lime"`, `Ac`e*to*ne"mi*a`); the tagged edition's legend confirms this reading.
+- **Damaged pronunciations follow some forms.** About 4,700 header lines carry a pronunciation respelling in parentheses, mostly mangled: `Cor"net*er (kr"nt-r), n.`. It is not part of the headword form; it stays in the entry text and is never used.
+- **Umlaut pseudo-variants.** 144 headword lines list a second "spelling" that only writes a printed ö, ü or ä as oe, ue or ae: `ZOOCHEMICAL; ZOOECHEMICAL` over `Zo`ö*chem"ic*al`. These are not variants; the edition leaves them out of `variants`.
 - **The headword line is ASCII-folded; the header line is not.** `AEGIS` is followed by `Æ"gis`, `ACTINOZOON` by `Ac"ti*no*zo"ön`, `ACCOUNTABLENESS` by `Ac*count"a*ble ness`. A literal comparison fails on ~1,200 entries; comparison must fold ligatures and diacritics and ignore marks and spaces.
-- **`Etym:`** 53,297 · **`Defn:`** 102,760 · **numbered sense lines** 62,508 · **lettered sub-senses** 6,830 · **`Note:`** 3,557 · **`Syn.`** 3,273.
-- **`Defn:` is not only for single-sense entries.** About 10,800 `Defn:` lines follow a numbered line that carries only a label (`2. (Mus.)`, blank line, `Defn: The name of…`). A sense is a numbered line plus any `Defn:` paragraph that follows it.
+- **`Etym:`** 53,297 · **`Defn:`** 102,760 · **numbered sense lines** 62,811 (62,508 excluding number-only lines) · **lettered sub-senses** 6,830 · **`Note:`** 3,557 · **`Syn.`** 3,273.
+- **`Defn:` is not only for single-sense entries.** 10,731 `Defn:` lines follow a numbered line that carries only a label (`2. (Mus.)`, blank line, `Defn: The name of…`). A sense is a numbered line plus any `Defn:` paragraph that follows it.
 - **Accented characters are intact** (ö, é, æ and so on, as real UTF-8).
 - **Usage and subject labels** appear inline as `[Obs.]`, `(Naut.)`.
-- **Quotations run on as wrapped text.** A block quotation is simply the next line of the paragraph (`…lofty.` / `Sublime on these a tower of steel is reared. Dryden.`), and the text is hard-wrapped at about 70 characters, so a line break says nothing. Inline quotations are in double quotes (`"The sublime Julian leader." De Quincey.`), and `"` is also the primary-stress mark.
+- **Quotations run on as wrapped text.** A block quotation is simply the next line of the paragraph (`…lofty.` / `Sublime on these a tower of steel is reared. Dryden.`), and the text is hard-wrapped at about 70 characters, so a line break says nothing; verse line breaks are lost too (`…a thing it is To suffer and be strong. Longfellow.`). Inline quotations are in double quotes (`"The sublime Julian leader." De Quincey.`); 7,878 body lines open one.
+- **`"` is also the primary-stress mark, inside entries as well as on header lines.** 2,950 body lines carry marked forms, mostly run-in derivatives (`-- Ag*gres"sive*ly, adv.`), some with the `--` lost. A quotation opens with `"` after a space and before a capital; a stress mark sits inside a word.
+- **An author-like name is not always a quotation's author.** Definitions also cite an *authority* with no quotation at all: `Defn: A yardstick. Tennyson.`, `court. Story.`, `latter. Bouvier. Chitty.`. The tagged edition used one tag for both. A line ending in a short capitalised token and a full stop can therefore be the end of a quotation, an authority for the definition, or an ordinary sentence.
 
 What it does **not** mark:
 
@@ -110,18 +114,19 @@ What it does **not** mark:
 
 It also contains transcription typos the tagged edition lacks (seen in one sample entry: "fiuid", "Quid" for "fluid", "Foundo" for "Found").
 
-**Untranscribed text was removed upstream.** Greek, Hebrew, and some symbols were deleted when the tags were stripped, usually leaving no trace: `Etym: [Gr. caulis stalk…` has lost its Greek word, `A flat (A)` has lost the flat sign, and a few places keep a stray entity such as `&a;`. Roughly 3,100 places have `Gr.` followed directly by punctuation. The canonical text cannot restore these, and W1913 will not restore them from another source. The parser detects the likely gaps, counts them in `report.json`, and the site marks each one with a neutral glyph whose text alternative says "untranscribed in the source".
+**Untranscribed text is missing.** Greek, Hebrew, and some symbols are absent, usually leaving no trace: `Etym: [Gr. caulis stalk…` has lost its Greek word, `A flat (A)` has lost the flat sign, and a few places keep a stray entity such as `&a;`. The tagged edition's legend says its typists had no Greek font, so the words were never typed; the gaps predate the tag stripping. Phase 0 measured, on paragraphs (the text is hard-wrapped): 4,848 places where a language that used a non-Latin script (overwhelmingly Greek) is followed directly by punctuation or the end of a paragraph, 190 more marked by a double space, 344 `(#)` placeholders, 90 empty brackets where a symbol was, and 7 stray entities. The canonical text cannot restore these, and W1913 will not restore them from another source. The parser detects the likely gaps, counts them in `report.json`, and the site marks each one with a neutral glyph whose text alternative says "untranscribed in the source".
 
 ### What the tagged edition knows that the plain text does not mark
 
 Measured on the tagged files: 39,329 block quotations (30,401 with an author directly after) plus ~7,700 inline quotations; ~26,900 collocations with their own definitions; 65,258 underlined cross-references and inflected forms; 1,744 page markers. The first file's front matter contains the transcriber's legend of every field mark.
 
-### Alignment (tested 15 Nov 2026)
+### Alignment (first tested 15 Nov 2026; measured in Phase 0, 27 Nov 2026)
 
-The two editions were aligned by headword and homograph order, then compared word by word on a sample of ~2,900 entries:
+The two editions are aligned by folded headword and homograph order, then compared word by word (similarity = 2 × longest common subsequence / total words). Phase 0 figures, with the 15 Nov sample (~2,900 entries) in brackets:
 
-- ~96,800 headwords found in both; for 95,162 of them both editions have the same number of entries.
-- 72% of sampled entries are word-for-word identical; 92% are at least 90% similar; 98% at least 80%.
+- 98,040 headwords found in both (~96,800); for 96,783 of them both editions have the same number of entries (95,162). 273 headwords are only in the plain text, 311 only in the tagged.
+- X–Z: 72.7% of paired entries at least 0.99 similar, 93.2% at least 0.90, 98.6% at least 0.80 (72%, 92%, 98%). SU: 95.0%, 98.8%, 99.6%. Median 1.000 in both.
+- The tagged X–Z file also carries the "New Words" supplement, which #29765 has merged into the alphabet.
 
 Method for the evaluation command:
 
@@ -139,13 +144,15 @@ The answer key and `eval.json` are development artefacts. They are gitignored an
 1. **Plain-text typos**, as above. No bulk "fix from the tagged edition"; reviewed corrections only, kept in a versioned `corrections.json`.
 2. **Entry boundary false positives.** A line in capitals inside an entry could be mistaken for a headword. Validate: every block's second line should echo the headword after folding (ligatures, diacritics, marks, spaces). Entries that still fail are listed by name, not silently accepted.
 3. **Pronunciation is mostly absent** in both editions. Never depend on it.
-4. **Untranscribed characters** (mostly Greek and other scripts in etymologies) were removed upstream, as above. Phase 0 audits the remaining non-ASCII characters and finds the patterns gaps leave behind (empty `Gr.`, stray `&…;` entities); nothing is repaired.
-5. **Quotation and author detection** is a heuristic, and an inline quotation's opening `"` must not be confused with a stress mark. Block quotations: text after a definition's closing full stop that ends in a short capitalised token (the author) and a full stop. Inline quotations: a `"…"` span followed by an author token. Measure before trusting.
+4. **Untranscribed characters** (mostly Greek in etymologies) are missing, as above. The gap patterns are detected and counted; nothing is repaired. Before the site shows a gap glyph, the detection rule is checked on a hand-labelled sample, because a bare `[Gr.]` can also mean "the word is Greek".
+5. **Quotation and author detection** is a heuristic with three outcomes, not two: a trailing name can close a quotation, cite an authority for the definition, or be ordinary text. An inline quotation's opening `"` must not be confused with a stress mark. Block quotations: text after a definition's closing full stop that ends in a short capitalised token (the author) and a full stop. Inline quotations: a `"…"` span, opened after a space and before a capital, followed by an author token. Authorities: an author token directly after a definition's full stop with no quotation between. Measure before trusting.
 6. **Cross-reference detection**: `See X`, `Cf. X`, `Same as X` followed by a capitalised word that is a headword. Cross-references often name a part of speech ("See Sublime, a."); resolve to the right homograph.
 7. **Labels**: match a closed vocabulary built by frequency count.
 8. **Authors are noisy**: thousands of distinct strings, a few hundred real authors. Normalise the top 300 by hand ("Shak." → Shakespeare).
 9. **Listed inflections are sparse.** Inflected lookup needs a rule-based suffix stripper checked against the headword list.
 10. **The tagged files have mis-nested tags** and two entry openers (`<p><hw>` and `<p>{ <hw>`). Tolerant tokenizer; never a strict XML/HTML parser.
+11. **Umlaut pseudo-variants and damaged pronunciations** on header and headword lines (above). Both are handled in the `segment` layer and counted in `report.json`.
+12. **Damaged headers.** Seven entries have headers no rule can read (`OVERTHWART` / `, v. t.`; `ECHAUGUETTE` / `(), n.`). They are the first candidates for `corrections.json`.
 
 ### Not used
 
@@ -180,7 +187,8 @@ Why split:
 
 ### Stack and hosting
 
-- **Nuxt 4**, **Nuxt UI v4**, **pnpm**, TypeScript. `better-sqlite3`, read-only at runtime, **FTS5**.
+- **Nuxt 4**, **Nuxt UI v4**, **pnpm**, TypeScript. `better-sqlite3`, read-only at runtime, **FTS5**. The data package is plain TypeScript run directly by Node 24.
+- **One SQLite file on the droplet.** `w1913.sqlite` is the dictionary: built per release, read-only, replaced on every deploy. Nothing at runtime writes to disk: there are no accounts, keys, or server-side personal data (§1, §4b).
 - **Hosting:** the Forge-provisioned DigitalOcean droplet `graceful-monet` (NYC1; 4 GB RAM, 2 vCPU, 80 GB disk; Ubuntu 26.04; IPv4 68.183.96.208, IPv6 2604:a880:400:d1:0:5:54e2:b001). It also runs one small PM2 app (`pictures`, pictures.metaincognita.com). Nuxt SSR (node-server preset) under **PM2** behind nginx. Decided against Netlify (27 Nov 2026): the SQLite database is too large for a serverless function bundle.
 - **Node:** the droplet's system Node is 22, which the PM2 daemon and the other app use. W1913 runs on Node 24 from nvm for the `forge` user, with `nvm alias default system` so other shells stay on 22; `rebuild.sh` switches itself to the `.nvmrc` version.
 - nginx caches entry pages; cache purged on deploy. Rate limiting at nginx (`limit_req`).
@@ -200,7 +208,7 @@ Deploys are manual: after a push to `main`, run `./rebuild.sh` in the checkout o
 
 ### URLs
 
-- `w1913.com/sublime` — the entry. Root-level, so the address bar is the search box. Reserved words (`search`, `author`, `label`, `synonyms`, `check`, `cards`, `about`, `api`) are served from `/w/<word>`. Most of them are real words a writer may type, so every reserved page carries a line at the top: "Looking for the word *check*?" linking to `/w/check`.
+- `w1913.com/sublime` — the entry. Root-level, so the address bar is the search box. Reserved words (`search`, `author`, `label`, `synonyms`, `check`, `cards`, `about`, `data`) are served from `/w/<word>`. Most of them are real words a writer may type, so every reserved page carries a line at the top: "Looking for the word *check*?" linking to `/w/check`.
 - Slugs are lower-cased headwords with marks stripped. Homographs and case pairs (august / August) share one page, each as its own section.
 - `/sublime#a-3` — sense permalink.
 
@@ -358,7 +366,37 @@ More play than tool, but reading a dictionary is how many writers find words, an
 
 ### Deferred
 
-Public documented API, PWA/offline, pattern search, structured data, page-scan links (the plain text carries no page numbers, so these need another source), browser extension.
+PWA/offline, pattern search, structured data, page-scan links (the plain text carries no page numbers, so these need another source), browser extension. Offline use and static data have their own section (§4b) and phase (7); there is no API (§4b says why).
+
+## 4b. Offline use and static data (no API)
+
+Programs such as Drafter or a Markdown editor need to look words up. W1913 gives them the data itself rather than an API: the edition is CC0, so there is nothing to meter, and a program that carries the data works offline and sends nothing anywhere.
+
+### What is published
+
+1. **Edition downloads**: every release in full (§3a): JSONL plus `manifest.json`.
+2. **A lookup build**: a compact file for programs that only need to look words up (headword, variants, part of speech, sense text; estimated 25–30 MB, roughly a third of that compressed; to be measured). Published with each release.
+3. **`@w1913/lookup`**: a small package that reads the lookup build and exposes `lookup(word)`, with the same folding and suffix stripping as the site, so a program and w1913.com give the same answer.
+4. **Static shards** at `w1913.com/data/<version>/<prefix>.json` (one per two-letter prefix, about 600 files), for a browser program that may fetch from w1913.com. Plain files, served and cached by nginx; no keys, no accounts, no personal data. The existing nginx rate limit is the only guard they need.
+
+### Drafter
+
+Checked against the Drafter repository (27 Nov 2026):
+
+- **Desktop (Electron)** runs the drafter.dev app from its own files, already bundles an offline spellcheck dictionary, and promises that its only network requests are to GitHub for updates. The W1913 lookup build fits the same pattern: an optional download inside Drafter, from the W1913 GitHub release (a host the desktop app already uses), stored next to its other data and queried locally. Drafter's privacy notes gain one line.
+- **Web (drafter.dev)** allows network requests only to its own origin (`connect-src 'self'`), so it cannot call w1913.com, by design. drafter.dev would serve the lookup build itself and cache it for offline use, like the rest of the app.
+- In both, looking a word up sends nothing: no word from a script leaves the writer's device, which an API could not promise.
+
+### Why there is no API (decided 27 Nov 2026)
+
+A read-only API with anonymous and keyed tiers was designed and declined:
+
+- **Nothing to protect.** The data is public domain and downloadable in full, so keys and limits would guard nothing.
+- **No user story it serves best.** Lookup from a writing program is better served by bundled data (instant, offline, private); developers are better served by the downloads.
+- **The risk is all in the machinery.** Registration means storing email addresses, sending confirmation emails (which a form can be abused to aim at strangers), a bot check, abuse monitoring, and key revocation: personal data and attack surface on a shared droplet, for no gain.
+- **It would contradict the programs it was for.** Drafter promises that a script never leaves the device, and its web version cannot reach another origin.
+
+If a program ever needs a query that only the server can answer (definition search from inside another tool), the answer is one anonymous, read-only, rate-limited endpoint with no keys, accounts, or email, decided then.
 
 ## 4a. Interface
 
@@ -473,6 +511,7 @@ Every phase builds from the public-domain plain text. Phase 5 adds the hardest h
 | **4. Rhythm and period** | Stress/syllable fields. Site: suffix stripper, word list | 0.5 | Stress filter, period check, inflected lookup | Stripper tested on 200 forms |
 | **5. Masters** | Quotation, author, and collocation heuristics; evaluation command against the tagged edition | 0.6 | Quotation search, author pages, collocation lookup, better links, quotations on cards, author decks | Precision and recall in `eval.json` meet the agreed bar (§8); top 300 authors normalised |
 | **6. Keeping and deferred** | Corrections workflow | 1.0 | Lists, citations, saved-word deck and card self-rating, then the deferred set | — |
+| **7. Offline use and static data** | Lookup build; static shards; `@w1913/lookup` | any | Word lookup inside Drafter (desktop and web) and the Markdown editor, offline, sending nothing (§4b) | `lookup()` agrees with the site on 200 fixed words; the lookup build's size is measured and recorded |
 
 Data and site advance together, one layer at a time. The edition is never "finished first".
 
@@ -485,7 +524,8 @@ Data and site advance together, one layer at a time. The edition is never "finis
 | Licence status of the tagged files | Settled by avoidance: nothing derived from them is stored or published; they only score heuristics |
 | Plain-text typos | Edition differences surface candidates; human-reviewed `corrections.json` |
 | Heuristics find quotations and cross-references less precisely than tags would | Measured two ways (hand-labelled sample; answer key from the tagged edition); a feature ships only above an agreed precision |
-| Tagged files stay unreachable, so there is no answer key | Fall back to larger hand-labelled samples; nothing in the build depends on the tagged files |
+| Tagged files stay unreachable, so there is no answer key | Largely retired: PG's mirror serves them and their checksums are pinned. Otherwise, larger hand-labelled samples; nothing in the build depends on the tagged files |
+| Static shards fetched in bulk | They are public-domain files the downloads already offer; nginx caching and `limit_req` keep load down |
 | Upstream file changes | Pinned checksum |
 | A bad deploy takes the site down, or disturbs the other app on the same droplet | Releases built side by side; canary check before the switch; automatic rollback; PM2 commands scoped to `w1913`; separate ports |
 | Project Gutenberg site outages | The download step accepts a file placed by hand and verifies it against the pinned checksum; a verified copy is already held |
@@ -504,10 +544,17 @@ Data and site advance together, one layer at a time. The edition is never "finis
 3. Where is the edition published? (Default: release assets on `cschweda/w1913`; npm is the alternative.)
 4. Is meaning-based search worth a model dependency?
 5. Should the trail survive closing the tab? (Default: no. It lasts for the tab's session; saved lists are the permanent record.)
+6. In what form does the lookup build ship: SQLite or a compact JSON index? (Decide by measuring size and lookup speed in Drafter's Electron and browser builds.)
+7. Does the lookup build come with Drafter's installer or as an optional download inside it? (Default: optional download, since it is far larger than the spellcheck dictionary.)
 
 ---
 
 ## 9. Change log
+
+**Draft 5.5**
+- Phase 0 findings folded into §2: 113,409 entries (three wrapped headword lines); damaged pronunciation respellings on ~4,700 header lines; 144 umlaut pseudo-variants; authorities cited without quotations, so a trailing name has three readings; marked forms inside entry bodies; untranscribed-text counts measured on paragraphs (4,848 Greek-type gaps) and their cause corrected (never typed, not lost in tag stripping); alignment re-measured (98,040 shared headwords; X–Z reproduces the earlier sample); PG's mirror serves the tagged files.
+- Added §4b, offline use and static data: edition downloads, a compact lookup build, `@w1913/lookup`, and static shards, so Drafter (desktop and web) and the Markdown editor can look words up offline without sending anything. A keyed API was designed and declined; §4b records why. Phase 7 added; the API leaves the deferred list.
+- Risks and open questions updated.
 
 **Draft 5.4**
 - Checked against the canonical file (checksum verified). §2 corrected and extended: CRLF line endings; headword lines are ASCII-folded while header lines keep æ and ö, so the echo test must fold; `Defn:` also follows numbered sense lines; `Syn.` count is 3,273; the meaning of the stress marks; quotations run on as wrapped text, and `"` is both a stress mark and an inline quotation mark.

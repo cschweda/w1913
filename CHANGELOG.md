@@ -22,6 +22,7 @@ Design history (Drafts 2–5.4) is kept in DESIGN.md §9.
   - `eval` (development only): tolerant tokenizer for the tagged edition and the alignment proof.
   - `docs/phase-0-notes.md`: what the data turned out to be.
   - `pnpm dev` (`scripts/dev.sh`): clears build caches, rebuilds the edition, and (from Phase 1) starts Nuxt on port 3913. Never touches `cache/sources/` or `cache/tagged/`.
+- DESIGN.md Draft 5.5: Phase 0 findings folded into §2; §4b, offline use and static data for Drafter and the Markdown editor, with the reasons a keyed API was declined; Phase 7.
 - **Data 0.0** (not published): 2,532 entries, `segment` layer only, a format check.
 - DESIGN.md Draft 5.4: the design document, checked against the canonical Project Gutenberg file (#29765).
 - KICKOFF.md: the Claude Code prompt for Phase 0.
