@@ -19,9 +19,11 @@ Design history (Drafts 2–5.4) is kept in DESIGN.md §9.
   - `/healthz` for the deploy's health checks.
 - **Data 0.1** (`segment`, all 113,409 entries) and **Data 0.2** (`senses`): etymology, inflections, spelling notes, labels, numbered senses, lettered sub-senses, notes, the Syn. paragraph, and cross-references (96.4% resolve to an entry). 50 golden entries, hand-checked.
 - `w1913.config.ts`: one file at the root for the main settings, with comments on what to change and what not to.
+- `docs/nginx-site.conf`: a record of the live nginx config for the Forge site, with what each part is for.
 
 ### Fixed
 
+- No layout shift when the font loads (`font-display: optional` plus a size-matched fallback); fonts cached for a year under versioned names, other public files for a day. Lighthouse performance 91 → 100.
 - Header parsing: the part of speech is no longer found inside an etymology ("Been. Etym: [... p. p. ...]"), variants separated by spaces are split, a form ends at ". " when there is no part of speech, and a long header form no longer replaces the headword. Parser version 0.1.1.
 
 - **Phase 0** (`packages/data`): pnpm workspace scaffold (pnpm 12.16.1, Node 24 running TypeScript directly, Vitest, ESLint).

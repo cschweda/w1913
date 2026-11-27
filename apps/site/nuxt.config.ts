@@ -37,13 +37,22 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
-        { rel: "preload", as: "font", href: "/fonts/InterVariable.woff2", type: "font/woff2", crossorigin: "" },
+        { rel: "preload", as: "font", href: "/fonts/InterVariable-4.1.woff2", type: "font/woff2", crossorigin: "" },
         { rel: "search", type: "application/opensearchdescription+xml", href: "/opensearch.xml", title: config.site.name },
       ],
       style: [{ key: "w1913-tokens", innerHTML: themeCss }],
     },
   },
   nitro: { preset: "node-server" },
+  // Browser caching for files in public/. Fonts carry their version in the
+  // file name, so they can be kept for a year; the rest for a day.
+  routeRules: {
+    "/fonts/**": { headers: { "cache-control": "public, max-age=31536000, immutable" } },
+    "/favicon.svg": { headers: { "cache-control": "public, max-age=86400" } },
+    "/og-image.png": { headers: { "cache-control": "public, max-age=86400" } },
+    "/opensearch.xml": { headers: { "cache-control": "public, max-age=86400" } },
+    "/robots.txt": { headers: { "cache-control": "public, max-age=86400" } },
+  },
   devServer: { port: config.server.devPort },
   typescript: { strict: true },
 });

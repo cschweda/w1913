@@ -1,20 +1,36 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-/* Inter, self-hosted (SIL Open Font License, public/fonts/Inter-LICENSE.txt). */
+/* Inter 4.1, self-hosted (SIL Open Font License, public/fonts/Inter-LICENSE.txt).
+   The version is in the file name so the files can be cached as immutable;
+   a new Inter gets a new name (and the preload in nuxt.config.ts follows).
+   font-display: optional means the browser never swaps fonts after the page
+   is drawn (no layout shift): it uses Inter when it is ready in time, which
+   the preload and the long cache make the usual case, and the fallback below
+   otherwise, for that one view. */
 @font-face {
   font-family: "Inter";
   font-style: normal;
   font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-display: optional;
+  src: url("/fonts/InterVariable-4.1.woff2") format("woff2");
 }
 @font-face {
   font-family: "Inter";
   font-style: italic;
   font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/InterVariable-Italic.woff2") format("woff2");
+  font-display: optional;
+  src: url("/fonts/InterVariable-Italic-4.1.woff2") format("woff2");
+}
+/* Arial (or Helvetica) resized to Inter's proportions, so a view drawn in the
+   fallback has the same line lengths and heights. */
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial"), local("Helvetica Neue"), local("Helvetica");
+  size-adjust: 107.4%;
+  ascent-override: 90.2%;
+  descent-override: 22.48%;
+  line-gap-override: 0%;
 }
 
 /* Tokens (DESIGN.md §4a): --bg --fg --mu --ln --ac --on are generated from
@@ -25,7 +41,7 @@
   --ui-border: var(--ln); --ui-border-accented: var(--mu);
   --ui-primary: var(--ac); --ui-text-inverted: var(--on);
   --ui-radius: 0;
-  --font-sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: "Inter", "Inter Fallback", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 html { background: var(--bg); color: var(--fg); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
