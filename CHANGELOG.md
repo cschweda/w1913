@@ -17,6 +17,23 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+## [0.17.2] - 2026-11-27
+
+Upkeep.
+
+### Changed
+
+- The deploy workflow uses the current GitHub actions (`actions/checkout@v7`,
+  `actions/setup-node@v7`, `pnpm/action-setup@v6`), which run on Node 24; GitHub had warned
+  that the old ones ran on a deprecated Node.
+- The README shows Forge's deployment status badge.
+
+### Checked
+
+- The light theme: axe-core finds no WCAG 2.2 AA violations (and no contrast items left for
+  review) on 16 page types, at desktop and phone widths. Until now only the dark theme had been
+  audited.
+
 ## [0.17.1] - 2026-11-27
 
 The first release deployed by pushing its tag.
