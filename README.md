@@ -44,6 +44,7 @@ The 1913 Webster's is loved for its discursive definitions, its literary quotati
 - **Look up by selection**: select a word in an entry to jump to it.
 - **Dark and light themes**, fast on a phone (Lighthouse 100 for performance, accessibility, best practices, and SEO), and no WCAG 2.2 AA violations on any page type.
 - **Private**: no accounts, no tracking cookies, and the words you look up are not logged.
+- **From a terminal**: `npx w1913 saunter` prints an entry; `npx w1913 bill of fare` finds a phrase; `npx w1913 --suggest saun` lists headwords; `--json` for scripts, `-n 2` for fewer senses, `--build <file>` to work offline. `npx w1913 --help` lists every option ([the package's README](packages/lookup#from-the-command-line) shows them all).
 - **Offline lookup for other programs**: [`w1913` on npm](https://www.npmjs.com/package/w1913) (`packages/lookup`) looks words up with the same answers as the site, from an 8.1 MB lookup build (no API, nothing sent anywhere), or from static shards at `w1913.com/data/0.7/<prefix>.json`.
 - **Readable by machines**: a canonical address, descriptions, and schema.org structured data on every page (each entry is a `DefinedTerm`), plus [/llms.txt](https://w1913.com/llms.txt).
 

@@ -1,10 +1,13 @@
 {
   "name": "w1913",
-  "version": "0.2.0",
-  "description": "Look words up in the 1913 Webster's offline, with the same answers as w1913.com.",
+  "version": "0.3.0",
+  "description": "Look words up in the 1913 Webster's offline or from the command line (npx w1913 saunter), with the same answers as w1913.com.",
   "homepage": "https://w1913.com",
   "license": "MIT",
   "type": "module",
+  "bin": {
+    "w1913": "./dist/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,6 +17,7 @@
   "files": [
     "dist",
     "README.md",
+    "HELP.txt",
     "LICENSE"
   ],
   "scripts": {
@@ -32,7 +36,9 @@
     "webster",
     "1913",
     "offline",
-    "lookup"
+    "lookup",
+    "cli",
+    "public-domain"
   ],
   "sideEffects": false,
   "engines": {

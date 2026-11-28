@@ -69,4 +69,12 @@ describe("w1913 lookup", () => {
     expect(fetched).toContain("wa");
     expect(fetched).not.toContain("go");
   });
+  it("suggests headwords from one shard, alphabetically, needing two letters", async () => {
+    const shards = makeShards(build);
+    const sl = createShardedLookup(async (p) => shards.get(p) ?? null);
+    expect((await sl.suggest("com")).map((s) => s.headword)).toEqual(["Com-", "Come", "Comet"]);
+    expect((await sl.suggest("com", 1)).map((s) => s.headword)).toEqual(["Com-"]);
+    expect(await sl.suggest("c")).toEqual([]);
+    expect(await sl.suggest("zz")).toEqual([]);
+  });
 });

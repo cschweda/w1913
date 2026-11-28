@@ -20,10 +20,11 @@ set -euo pipefail
 #   - w1913@<version> isn't on npm yet, and CHANGELOG.md mentions it;
 #   - main's own commit (in a temporary worktree, so nothing uncommitted leaks in) installs,
 #     builds, and passes the package's tests;
-#   - the package holds package.json, README.md, LICENSE and dist/ and nothing else, with no
+#   - the package holds package.json, README.md, HELP.txt, LICENSE and dist/ and nothing else, with no
 #     dependencies;
 #   - the packed tarball installs in a scratch project and looks words up (against w1913.com's
-#     static shards: "walked" finds walk, "bill of fare" finds its phrase).
+#     static shards: "walked" finds walk, "bill of fare" finds its phrase), and its `w1913`
+#     command prints its version and help, finds "walked", and exits 1 for "smartphone".
 # It then asks for the version to be typed, and then npm asks for your approval: a link to open in
 # a browser (or a one-time code on some accounts). What it publishes is the tarball it tested.
 
@@ -146,9 +147,9 @@ FILES=$(npm pack "$WORKTREE/$DIR" --pack-destination "$PACKED" --json --ignore-s
     const [pack] = JSON.parse(require("fs").readFileSync(0, "utf8"));
     console.log(pack.files.map((f) => f.path).filter((p) => !p.startsWith("dist/")).sort().join("\n"));
   ')
-EXPECTED=$(printf '%s\n' LICENSE README.md package.json)
+EXPECTED=$(printf '%s\n' HELP.txt LICENSE README.md package.json)
 [[ "$FILES" == "$EXPECTED" ]] ||
-  die "Outside dist/, the package should hold exactly package.json, README.md and LICENSE; it holds:"$'\n'"$FILES"
+  die "Outside dist/, the package should hold exactly package.json, README.md, HELP.txt and LICENSE; it holds:"$'\n'"$FILES"
 node --input-type=commonjs -e '
   const pkg = require(require("path").resolve(process.argv[1], "package.json"));
   const extra = ["dependencies", "peerDependencies", "optionalDependencies"].filter((f) => f in pkg);
@@ -180,6 +181,15 @@ if (none !== null) throw new Error("smartphone: found");
 console.log(`edition ${edition}: walked → ${walked.slug}, bill of fare → ${bill.phrase.url}`);
 EOF
   node check.mjs
+  # The command: --version, --help, a lookup, and "not found" exiting 1.
+  [[ "$(npx --no-install w1913 --version)" == "$VERSION" ]] || { echo "w1913 --version isn't $VERSION" >&2; exit 1; }
+  npx --no-install w1913 --help | grep -q "^Usage:" || { echo "w1913 --help printed no usage" >&2; exit 1; }
+  NO_COLOR=1 npx --no-install w1913 walked | head -1 | grep -qx "Walk" || { echo "w1913 walked didn't print Walk" >&2; exit 1; }
+  set +e
+  npx --no-install w1913 smartphone >/dev/null 2>&1
+  STATUS=$?
+  set -e
+  [[ "$STATUS" == 1 ]] || { echo "w1913 smartphone exited $STATUS, not 1" >&2; exit 1; }
 ) || die "The packed tarball didn't install and look words up."
 info "The packed tarball installs and looks words up."
 

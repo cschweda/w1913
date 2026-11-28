@@ -125,5 +125,18 @@ export function createShardedLookup(fetchShard: (prefix: string) => Promise<Look
       const page = r && pages.get(r.slug);
       return page ? toResult(page, r.via, loaded[0]!.site, new Set(loaded[0]!.reserved)) : null;
     },
+    /** Headwords starting with a prefix of at least two letters (folded), alphabetically, at most `limit`; one shard. */
+    async suggest(prefix: string, limit = 8): Promise<{ headword: string; slug: string }[]> {
+      const f = foldForCompare(prefix);
+      if (f.length < 2) return [];
+      const s = await shard(shardPrefix(f));
+      if (!s) return [];
+      return Object.values(s.pages)
+        .filter((p) => foldForCompare(p[1]).startsWith(f))
+        .map((p) => ({ headword: p[1], slug: p[0], k: foldForCompare(p[1]) }))
+        .sort((a, b) => (a.k < b.k ? -1 : a.k > b.k ? 1 : a.slug < b.slug ? -1 : 1))
+        .slice(0, limit)
+        .map(({ headword, slug }) => ({ headword, slug }));
+    },
   };
 }

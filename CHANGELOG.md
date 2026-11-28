@@ -24,6 +24,16 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
   it: it builds and tests the committed `main`, checks what goes in the package, installs the packed
   tarball and looks words up with it, and only then asks npm for your approval.
 
+### Added
+
+- **`npx w1913`**: the `w1913` package 0.3.0 has a command. `npx w1913 saunter` prints the entry,
+  wrapped to the terminal; inflections and phrases work as on the site (`walked`, `bill of fare`).
+  `--suggest` lists headwords, `--json` prints the library's result, `-n` limits senses, `--build`
+  works offline from a lookup build (`.json` or `.json.gz`), `--edition` and `--site` choose the
+  shards. Its help is the package's `HELP.txt`, shown in full in its README (a test keeps them
+  the same). Exit status 0 found, 1 not found, 2 usage or data error.
+- `createShardedLookup().suggest(prefix)`: headwords from one shard, alphabetically.
+
 ## [0.17.2] - 2026-11-27
 
 Upkeep.
