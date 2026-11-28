@@ -1,4 +1,4 @@
-// Phase 7 exit test (DESIGN.md §6): @w1913/lookup agrees with the site on
+// Phase 7 exit test (DESIGN.md §6): the lookup package (npm: w1913) agrees with the site on
 // 200 fixed words, from the whole lookup build and from static shards. The
 // "site" side runs the site's own queries on its database (server/utils/lookup.ts).
 import { existsSync, readFileSync } from "node:fs";

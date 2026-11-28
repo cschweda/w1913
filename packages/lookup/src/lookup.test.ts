@@ -21,7 +21,7 @@ const build: LookupBuild = {
   phrases: { billoffare: [0, "n-p-bill-of-fare"], loveapple: [0, "n-p-love-apple"] },
 };
 
-describe("@w1913/lookup", () => {
+describe("w1913 lookup", () => {
   const lk = createLookup(build);
   it("finds a headword, folding case and marks", () => {
     expect(lk.lookup("WALK")).toMatchObject({ slug: "walk", headword: "Walk", via: null, url: "https://w1913.com/walk" });

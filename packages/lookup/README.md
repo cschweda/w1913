@@ -1,12 +1,16 @@
-# @w1913/lookup
+# w1913
 
 Look words up in *Webster's Revised Unabridged Dictionary* (1913) inside your
 own program, offline, with the same answers as [w1913.com](https://w1913.com).
 No API, no keys, no network: you carry the data, and nothing a writer types
 leaves their device.
 
+```sh
+npm install w1913
+```
+
 ```ts
-import { createLookup } from "@w1913/lookup";
+import { createLookup } from "w1913";
 
 const build = await (await fetch("/w1913-lookup-0.7.json")).json(); // or readFile in Electron/Node
 const dictionary = createLookup(build);
@@ -31,13 +35,14 @@ dictionary.suggest("saun");      // [{ headword: "Saunter", slug: "saunter" }, â
   block quotations left out; and, from edition 0.7, the phrases defined inside entries (24,628,
   such as *Bill of fare*), each with its definition and its anchor on w1913.com. A word of several
   parts that is not a page of its own but is such a phrase comes back with `phrase` set; every
-  entry lists its `phrases`. Older builds simply have none. Published with each W1913 release. CC0 1.0.
+  entry lists its `phrases`. Older builds simply have none. Published with each W1913 release that changes the data, on the
+  [releases page](https://github.com/cschweda/w1913/releases). CC0 1.0.
 - **Static shards** at `https://w1913.com/data/<edition>/<prefix>.json` (380 files, one per
   two-letter prefix; `index.json` lists them), for a browser program that may fetch from
   w1913.com:
 
 ```ts
-import { createShardedLookup } from "@w1913/lookup";
+import { createShardedLookup } from "w1913";
 const dictionary = createShardedLookup((prefix) => fetch(`https://w1913.com/data/0.7/${prefix}.json`).then((r) => (r.ok ? r.json() : null)));
 await dictionary.lookup("walked");
 ```

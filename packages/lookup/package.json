@@ -1,18 +1,41 @@
 {
-  "name": "@w1913/lookup",
+  "name": "w1913",
   "version": "0.2.0",
   "description": "Look words up in the 1913 Webster's offline, with the same answers as w1913.com.",
+  "homepage": "https://w1913.com",
   "license": "MIT",
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "prepublishOnly": "tsc -p tsconfig.build.json"
   },
-  "repository": { "type": "git", "url": "git+https://github.com/cschweda/w1913.git", "directory": "packages/lookup" },
-  "keywords": ["dictionary", "webster", "1913", "offline", "lookup"]
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cschweda/w1913.git",
+    "directory": "packages/lookup"
+  },
+  "keywords": [
+    "dictionary",
+    "webster",
+    "1913",
+    "offline",
+    "lookup"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  }
 }

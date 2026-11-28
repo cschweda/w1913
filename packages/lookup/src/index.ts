@@ -1,4 +1,4 @@
-// @w1913/lookup: look words up in the 1913 Webster's offline, with the same
+// w1913 (npm; packages/lookup): look words up in the 1913 Webster's offline, with the same
 // answers as w1913.com. See README.md.
 export { createLookup, createShardedLookup, shardPrefix, type Result, type Entry, type Sense, type Phrase } from "./lookup.ts";
 export { foldForCompare, slugify } from "./fold.ts";

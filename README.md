@@ -44,7 +44,7 @@ The 1913 Webster's is loved for its discursive definitions, its literary quotati
 - **Look up by selection**: select a word in an entry to jump to it.
 - **Dark and light themes**, fast on a phone (Lighthouse 100 for performance, accessibility, best practices, and SEO), and no WCAG 2.2 AA violations on any page type.
 - **Private**: no accounts, no tracking cookies, and the words you look up are not logged.
-- **Offline lookup for other programs**: [`@w1913/lookup`](packages/lookup) looks words up with the same answers as the site, from an 8.1 MB lookup build (no API, nothing sent anywhere), or from static shards at `w1913.com/data/0.7/<prefix>.json`.
+- **Offline lookup for other programs**: [`w1913` on npm](https://www.npmjs.com/package/w1913) (`packages/lookup`) looks words up with the same answers as the site, from an 8.1 MB lookup build (no API, nothing sent anywhere), or from static shards at `w1913.com/data/0.7/<prefix>.json`.
 - **Readable by machines**: a canonical address, descriptions, and schema.org structured data on every page (each entry is a `DefinedTerm`), plus [/llms.txt](https://w1913.com/llms.txt).
 
 ![An entry: "Subtle", with its syllable diagram, decoded abbreviations in the etymology, four numbered senses, the Syn. line, and the neighbors list on the left.](docs/images/entry-subtle.jpg)
@@ -67,7 +67,7 @@ Each phase adds one layer to the edition and the features that rest on it (DESIG
 Three packages in one pnpm workspace:
 
 - **`packages/data`** (plain TypeScript, run by Node 24) turns Project Gutenberg eBook #29765 into a versioned, layered edition of the dictionary: `w1913-<version>.jsonl`, one entry per line, validated against a schema. The site currently serves **edition 0.7**: 113,409 entries with their senses, synonyms, labels, syllables and stress, listed inflections, quotations with their authors, and 24,628 phrases defined inside entries.
-- **`packages/lookup`** (`@w1913/lookup`) is the offline lookup: the folding and suffix stripping the site itself uses, over a compact lookup build that `db:import` writes next to the database. `scripts/release-assets.sh` prepares the downloads for a release.
+- **`packages/lookup`** (published to npm as `w1913`) is the offline lookup: the folding and suffix stripping the site itself uses, over a compact lookup build that `db:import` writes next to the database. `scripts/release-assets.sh` prepares the downloads for a release.
 - **`apps/site`** (Nuxt 4, Nuxt UI v4) imports the pinned edition into a read-only SQLite database, renders every entry to semantic HTML once at import, and serves it with server-side rendering.
 
 Every published word comes from #29765, which Project Gutenberg catalogues as public domain. The older tagged edition (#660–670) is used only to measure the parser's accuracy and never supplies data; DESIGN.md §2 explains why. What the source text turned out to be, including its damage and gaps, is in [docs/phase-0-notes.md](docs/phase-0-notes.md).

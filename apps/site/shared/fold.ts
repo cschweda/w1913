@@ -1,6 +1,6 @@
 import config from "../../../w1913.config.ts";
 
-// Folding and slugs come from @w1913/lookup (the same rules as the edition),
+// Folding and slugs come from packages/lookup (npm: w1913) (the same rules as the edition),
 // so the site, the edition and programs using the lookup build agree.
 
 export { foldForCompare, slugify } from "../../../packages/lookup/src/fold.ts";
