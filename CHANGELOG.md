@@ -17,6 +17,13 @@ Design history (Drafts 2–5.5) is kept in DESIGN.md §9.
 
 ## [Unreleased]
 
+### Changed
+
+- **The lookup package is published to npm as `w1913`** (`npm install w1913`; it was to be
+  `@w1913/lookup`, but npm has no `w1913` organization), version 0.2.0. `./publish.sh` publishes
+  it: it builds and tests the committed `main`, checks what goes in the package, installs the packed
+  tarball and looks words up with it, and only then asks npm for your approval.
+
 ## [0.17.2] - 2026-11-27
 
 Upkeep.

@@ -67,7 +67,7 @@ Each phase adds one layer to the edition and the features that rest on it (DESIG
 Three packages in one pnpm workspace:
 
 - **`packages/data`** (plain TypeScript, run by Node 24) turns Project Gutenberg eBook #29765 into a versioned, layered edition of the dictionary: `w1913-<version>.jsonl`, one entry per line, validated against a schema. The site currently serves **edition 0.7**: 113,409 entries with their senses, synonyms, labels, syllables and stress, listed inflections, quotations with their authors, and 24,628 phrases defined inside entries.
-- **`packages/lookup`** (published to npm as `w1913`) is the offline lookup: the folding and suffix stripping the site itself uses, over a compact lookup build that `db:import` writes next to the database. `scripts/release-assets.sh` prepares the downloads for a release.
+- **`packages/lookup`** (published to npm as `w1913`) is the offline lookup: the folding and suffix stripping the site itself uses, over a compact lookup build that `db:import` writes next to the database. `scripts/release-assets.sh` prepares the downloads for a release. `./publish.sh` puts it on npm (`--dry-run` first).
 - **`apps/site`** (Nuxt 4, Nuxt UI v4) imports the pinned edition into a read-only SQLite database, renders every entry to semantic HTML once at import, and serves it with server-side rendering.
 
 Every published word comes from #29765, which Project Gutenberg catalogues as public domain. The older tagged edition (#660–670) is used only to measure the parser's accuracy and never supplies data; DESIGN.md §2 explains why. What the source text turned out to be, including its damage and gaps, is in [docs/phase-0-notes.md](docs/phase-0-notes.md).
